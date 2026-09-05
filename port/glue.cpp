@@ -126,6 +126,12 @@ bool outrun_engine_init(void)
     return true;
 }
 
+void outrun_engine_reset(void)
+{
+    outrun.init();
+    cannonball::state = cannonball::STATE_GAME;
+}
+
 // One iteration of upstream's tick(), minus the SDL event pump and the menu and
 // time-trial states, which this port does not carry.
 void outrun_engine_tick(void)

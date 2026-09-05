@@ -325,13 +325,55 @@ static void processPerFrame(void)
         }
     }
 
+    /* SELECT + START opens the settings menu. This MUST come before the engine
+     * tick below: it used to sit after it, behind an early return left over from
+     * when the tile viewer was the main path, so the menu was unreachable the
+     * moment the engine started. */
+    if ((buttons & io::GamePadState::Button::SELECT) && (buttons & io::GamePadState::Button::START))
+    {
+        showSettings = true;
+    }
+
+    bool repaint = false;
+
+    if (showSettings)
+    {
+        showSettings = false;
+
+        /* Drop everything the engine thinks is held, or the car drives itself
+         * while the menu is up and the combo re-triggers on the way out. */
+        if (engineRunning)
+        {
+            input.init();
+        }
+
+        int rval = showSettingsMenu(true);
+        prevButtons = 0;
+
+        // The menu can change screen mode; pico_shared needs this re-applied.
+        scaleMode8_7_ = Frens::applyScreenMode(settings.screenMode);
+
+        if (engineRunning)
+        {
+            if (rval == 5) // Reset Game
+            {
+                outrun_engine_reset();
+            }
+            // The engine repaints the whole frame on its next render, so there
+            // is nothing to restore here.
+        }
+        else
+        {
+            repaint = true;
+        }
+    }
+
     if (engineRunning)
     {
         outrun_engine_tick();
         return;
     }
 
-    bool repaint = false;
     if (haveData && (pressed & io::GamePadState::Button::RIGHT))
     {
         tilePage++;
@@ -341,18 +383,6 @@ static void processPerFrame(void)
     {
         tilePage--;
         repaint = true;
-    }
-    if ((buttons & io::GamePadState::Button::SELECT) && (buttons & io::GamePadState::Button::START))
-    {
-        showSettings = true;
-    }
-
-    if (showSettings)
-    {
-        showSettings = false;
-        showSettingsMenu(true);
-        prevButtons = 0;
-        repaint = true; // the settings menu repaints the screen for its own use
     }
 
     if (repaint)

@@ -12,3 +12,6 @@ bool outrun_engine_init(void);
 // One frame: controls, engine logic, sound, and the render into pico_shared's
 // framebuffer. Call once per displayed frame.
 void outrun_engine_tick(void);
+
+// Restart the game from the beginning (settings menu -> Reset Game).
+void outrun_engine_reset(void);
