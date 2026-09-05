@@ -264,6 +264,7 @@ target_compile_definitions(${projectname} PUBLIC
     ENABLE_VU_METER=${ENABLE_VU_METER}
     WIIPAD_DELAYED_START=${WIIPAD_DELAYED_START}
     ENABLEDVI=1
+    NES_OVERCLOCK_FIX=1  # avoid artifacts due to usb jitter
 )
 
 # NOTE: HSTX_CORE1_STACK_IN_SCRATCH_X is deliberately NOT set here, though the
