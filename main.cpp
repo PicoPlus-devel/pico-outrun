@@ -373,7 +373,7 @@ static void draw_error_screen(void)
     outrun_screen_text(0, row++, "   and flashing it.", SCR_FG, SCR_BG);
 
     outrun_screen_text(0, 25, "SELECT+START opens settings,", SCR_HI, SCR_BG);
-    outrun_screen_text(0, 26, "which can enter BOOTSEL mode.", SCR_HI, SCR_BG);
+    outrun_screen_text(0, 26, "which can enter USB drive mode.", SCR_HI, SCR_BG);
 }
 
 // ---------------------------------------------------------------------------
@@ -506,6 +506,10 @@ static void processPerFrame(void)
         {
             repaint = true;
         }
+        if ( !haveData) {
+            printf("Rebooting due to missing data...\n");
+            watchdog_reboot(0, 0, 0);
+        }
     }
 
     if (engineRunning)
@@ -569,11 +573,12 @@ int main()
     // at this buffer on the menu's watchdog-reboot path, which we never take.
     char dummyRom[FF_MAX_LFN];
     dummyRom[0] = 0;
-
+   
     // useFrameBuffer MUST be true. Passing false silently disables
     // framebuffer-direct drawing on the RP2350 PicoDVI path.
     bool sdOk = Frens::initAll(dummyRom, CPUFreqKHz, MARGINTOP, MARGINBOTTOM,
                                AUDIOBUFFERSIZE, false, true);
+  
     if (!sdOk)
     {
         // Not fatal: only settings persistence lives on the card.
@@ -596,10 +601,11 @@ int main()
          * Done here rather than in pico_shared because the directory check is
          * correct for the emulators; it is this port that is unusual. */
         f_mkdir("/roms");
-        f_mkdir(settings.currentDir); // FR_EXIST on later boots, which is fine
+        f_mkdir("/roms/ORUN"); // FR_EXIST on later boots, which is fine
         FrensSettings::loadsettings();
     }
-
+    // No filebrowser in this port; force the currentDir to the expected ROM path.
+    strcpy(settings.currentDir, "/roms/ORUN");
     g_settings_visibility = g_settings_visibility_outrun;
     g_available_screen_modes = g_available_screen_modes_outrun;
     scaleMode8_7_ = Frens::applyScreenMode(settings.screenMode);
