@@ -11,6 +11,7 @@
 ***************************************************************************/
 
 #include <stdlib.h>
+#include "outrun_hot.hpp"
 #include <cmath>
 #include <cstring>  // For memset on GCC
 
@@ -1012,7 +1013,7 @@ void YM2151::refresh_EG(YM2151Operator * op)
 
 
 /* write a register on YM2151 chip number 'n' */
-void YM2151::write_reg(int r, int v)
+void OUTRUN_HOT(YM2151::write_reg)(int r, int v)
 {
     YM2151Operator *op = &oper[ (r&0x07)*4+((r&0x18)>>3) ];
 
@@ -2058,7 +2059,7 @@ void YM2151::advance()
 *   '**buffers' is table of pointers to the buffers: left and right
 *   'length' is the number of samples that should be generated
 */
-void YM2151::stream_update()
+void OUTRUN_HOT(YM2151::stream_update)()
 {
     SoundChip::clear_buffer();
     uint32_t i;

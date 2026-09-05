@@ -15,6 +15,7 @@ TODO:
 */
 
 #include <cstring> // For memset on GCC
+#include "outrun_hot.hpp"
 #include "engine/audio/osound.hpp"
 
 // Use YM2151 Timing
@@ -77,7 +78,7 @@ void OSound::init_fm_chip()
    fm_write_reg(0x14, 0x35);
 }
 
-void OSound::tick()
+void OUTRUN_HOT(OSound::tick)()
 {
     fm_dotimera();          // FM: Process Timer A. Stop Timer B
     process_command();      // Process Command sent by main program code (originally the main 68k processor)

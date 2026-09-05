@@ -55,6 +55,7 @@
  */
 
 #include "hwaudio/segapcm.hpp"
+#include "outrun_hot.hpp"
 
 SegaPCM::SegaPCM(uint32_t clock, RomLoader* rom, uint8_t* ram, int32_t bank)
 {
@@ -91,7 +92,7 @@ void SegaPCM::init(int32_t rate, int32_t fps)
     SoundChip::init(STEREO, rate, fps);
 }
 
-void SegaPCM::stream_update()
+void OUTRUN_HOT(SegaPCM::stream_update)()
 {
     SoundChip::clear_buffer();
 

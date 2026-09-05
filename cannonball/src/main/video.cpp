@@ -65,7 +65,7 @@ Video::~Video(void)
      * rather than deleted. In practice this global is never destroyed on the
      * target; this keeps the code honest rather than useful. */
     if (sprite_layer) { sprite_layer->~hwsprites(); outrun_psram_free(sprite_layer); }
-    delete tile_layer;
+    if (tile_layer) { tile_layer->~hwtiles(); outrun_psram_free(tile_layer); }
     if (pixels) outrun_psram_free(pixels);
 #else
     delete sprite_layer;
@@ -92,10 +92,13 @@ int Video::init(Roms* roms, video_settings_t* settings)
      * audio ring. */
     if (!sprite_layer)
         sprite_layer = new (outrun_psram_alloc(sizeof(hwsprites))) hwsprites();
-    /* Back in SRAM now that pixels has vacated it: tile_ram is read for every
-     * tile of every scanline. */
+    /* PSRAM. Its 68 KB of tile/text RAM is the last large video buffer, and the
+     * SRAM it frees goes to the audio hot path instead - audio is what is still
+     * wrong, and core1 running the YM2151 out of flash is the likely reason.
+     * Tile RAM is read per tile of a scanline, not per pixel, so it is the
+     * cheaper of the two to slow down. */
     if (!tile_layer)
-        tile_layer = new hwtiles();
+        tile_layer = new (outrun_psram_alloc(sizeof(hwtiles))) hwtiles();
 #endif
 
     if (!set_video_mode(settings))

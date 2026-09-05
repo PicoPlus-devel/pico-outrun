@@ -23,6 +23,7 @@
 #include "engine/audio/osoundint.hpp"
 #include "frontend/config.hpp"
 #include "outrun_audio.hpp"
+#include "outrun_hot.hpp"
 
 #if HSTX
 #include "drivers/pico_hdmi/video_output.h"
@@ -87,7 +88,7 @@ static inline uint32_t ring_avail(void)
 static volatile bool core1_audio_enabled;
 static uint32_t core1_last_frame;
 
-static void core1_audio_task(void)
+static void OUTRUN_HOT(core1_audio_task)(void)
 {
     if (!core1_audio_enabled)
     {
@@ -156,7 +157,7 @@ void outrun_audio_stats(uint32_t *pushed, uint32_t *dropped, uint32_t *starved, 
 }
 
 // Called once per ENGINE tick (30 Hz by default), after osoundint.tick().
-void outrun_audio_frame(void)
+void OUTRUN_HOT(outrun_audio_frame)(void)
 {
     if (!config.sound.enabled)
     {
@@ -207,7 +208,7 @@ void outrun_audio_frame(void)
 }
 
 // Called every DISPLAYED frame. Moves whatever the sink will accept.
-void outrun_audio_pump(void)
+void OUTRUN_HOT(outrun_audio_pump)(void)
 {
     uint32_t avail = ring_avail();
     if (!avail)

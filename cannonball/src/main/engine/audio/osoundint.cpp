@@ -10,6 +10,7 @@
 ***************************************************************************/
 
 #include "engine/outrun.hpp"
+#include "outrun_hot.hpp"
 #include "engine/audio/osound.hpp"
 #include "engine/audio/osoundint.hpp"
 
@@ -62,7 +63,7 @@ void OSoundInt::reset()
     audio_ticks = 0;
 }
 
-void OSoundInt::tick()
+void OUTRUN_HOT(OSoundInt::tick)()
 {
     // The audio code is updated 125 times per second
     audio_ticks += (125.0 / config.fps);

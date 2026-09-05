@@ -166,6 +166,12 @@ add_executable(${projectname}
 # --check mode stay in hosttest/ so the option can be turned back on.
 target_compile_definitions(${projectname} PRIVATE
     OUTRUN_GFX_IN_FLASH=1
+    # Put the OUTRUN_HOT-marked functions in SRAM. That is now the AUDIO path -
+    # YM2151/SegaPCM stream_update, OSound::tick and the mix/pump - which runs on
+    # core1 out of flash and is the remaining sound problem. Paid for by moving
+    # hwtiles to PSRAM, NOT out of the HSTX audio queue (see add_definitions
+    # above for why that was a mistake).
+    OUTRUN_HOT_IN_SRAM=1
 )
 
 target_compile_options(${projectname} PRIVATE
