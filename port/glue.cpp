@@ -256,6 +256,9 @@ void outrun_engine_tick(void)
         {
             video.prepare_frame();
             video.render_frame();
+            /* After render_frame, so it paints over the finished image rather
+             * than being overwritten by it. */
+            outrun_fps_overlay();
         }
     }
 
@@ -278,6 +281,7 @@ void outrun_engine_tick(void)
     {
         uint32_t pushed, dropped, starved, level;
         outrun_audio_stats(&pushed, &dropped, &starved, &level);
+        outrun_fps_set(frames_since, drawn_since);
         printf("[outrun] loop=%lu drawn=%lu audio pushed=%lu dropped=%lu starved=%lu resync=%d\n",
                (unsigned long)frames_since, (unsigned long)drawn_since, (unsigned long)pushed,
                (unsigned long)dropped, (unsigned long)starved, get_video_output_resync_count());

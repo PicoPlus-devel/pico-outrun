@@ -98,10 +98,10 @@ static uint32_t CPUFreqKHz = OUTRUN_CLOCKFREQ_KHZ;
 // not skip members, so a gap is a compile error, not a zero.
 // ---------------------------------------------------------------------------
 int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
-    [MOPT_EXIT_GAME] = 0,               // nowhere to exit to: there is no ROM browser
+    [MOPT_EXIT_GAME] = -1,               // nowhere to exit to: there is no ROM browser
     [MOPT_RESET_GAME] = 1,
     [MOPT_REBOOT_TO_LOADER] = 0,        // Phase 2: Frens::isLaunchedFromBootloader()
-    [MOPT_SAVE_RESTORE_STATE] = 0,      // no save states
+    [MOPT_SAVE_RESTORE_STATE] = -1,      // no save states
     [MOPT_SCREENMODE] = 1,
     [MOPT_SCANLINES] = 1,
     [MOPT_SCANLINE_TYPE] = 1,
@@ -110,8 +110,8 @@ int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
     [MOPT_FRAMESKIP] = 0,
     [MOPT_DISPLAY_MODE] = 1,
     [MOPT_EXTERNAL_AUDIO] = 1,
-    [MOPT_FONT_COLOR] = 1,
-    [MOPT_FONT_BACK_COLOR] = 1,
+    [MOPT_FONT_COLOR] = 0,
+    [MOPT_FONT_BACK_COLOR] = 0,
     [MOPT_FRUITJAM_VUMETER] = 1,
     [MOPT_FRUITJAM_VOLUME_CONTROL] = 1,
     [MOPT_DMG_PALETTE] = 0,             // Game Boy

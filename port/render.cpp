@@ -11,7 +11,9 @@
 #include <cmath>
 #include <cstring>
 
+#include "FrensFonts.h"
 #include "FrensHelpers.h"
+#include "settings.h"
 
 // OutRun is 320x224 inside pico_shared's 320x240 framebuffer: 8 blank lines top
 // and bottom.
@@ -109,6 +111,73 @@ void __not_in_flash_func(Render::draw_frame)(uint16_t *pixels)
         for (int x = 0; x < w; x++)
         {
             dst[x] = lut[src[x]];
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * FPS overlay (settings menu -> Show FPS).
+ *
+ * Modelled on the sibling emulators (see pico-genesisPlus drawFpsOverlay), but
+ * this port has two rates worth seeing, not one:
+ *
+ *   loop  - how often the engine ticks. This is GAME SPEED: OutRun expects 60
+ *           and anything less means the world runs slow.
+ *   draw  - how many of those frames were actually rendered. Adaptive frame
+ *           skip trades this away to protect `loop`.
+ *
+ * Showing only the drawn rate would hide the more important number, so it is
+ * rendered as "loop/draw".
+ *
+ * Drawn straight into the framebuffer after the frame, in the 8 blank
+ * letterbox lines above the 320x224 image, so it never overwrites the game.
+ * ------------------------------------------------------------------------- */
+
+#if HSTX
+#define FPS_FG 0      // black (RGB555)
+#define FPS_BG 0x7FFF // white (RGB555)
+#else
+#define FPS_FG 0     // black (RGB444)
+#define FPS_BG 0xFFF // white (RGB444)
+#endif
+
+static char fps_text[8] = "--/--";
+static int fps_len = 5;
+
+void outrun_fps_set(unsigned long loop_fps, unsigned long drawn_fps)
+{
+    if (loop_fps > 99) loop_fps = 99;
+    if (drawn_fps > 99) drawn_fps = 99;
+
+    int n = 0;
+    fps_text[n++] = (char)('0' + (loop_fps / 10) % 10);
+    fps_text[n++] = (char)('0' + loop_fps % 10);
+    fps_text[n++] = '/';
+    fps_text[n++] = (char)('0' + (drawn_fps / 10) % 10);
+    fps_text[n++] = (char)('0' + drawn_fps % 10);
+    fps_len = n;
+}
+
+void outrun_fps_overlay(void)
+{
+    if (!settings.flags.displayFrameRate)
+    {
+        return;
+    }
+
+    /* The letterbox band above the image - drawing here costs the game nothing,
+     * and OUTRUN_YOFFSET is exactly 8 lines, one character tall. */
+    for (int line = 0; line < 8 && line < OUTRUN_YOFFSET; line++)
+    {
+        uint16_t *dst = fb_line(line) + 5;
+        for (int i = 0; i < fps_len; i++)
+        {
+            char slice = getcharslicefrom8x8font(fps_text[i], line & 7);
+            for (int bit = 0; bit < 8; bit++)
+            {
+                *dst++ = (slice & 1) ? FPS_FG : FPS_BG;
+                slice >>= 1;
+            }
         }
     }
 }

@@ -15,3 +15,8 @@ void outrun_engine_tick(void);
 
 // Restart the game from the beginning (settings menu -> Reset Game).
 void outrun_engine_reset(void);
+
+/* FPS overlay. outrun_fps_set() takes the two rates the once-a-second report
+ * already computes; outrun_fps_overlay() paints them if the setting is on. */
+void outrun_fps_set(unsigned long loop_fps, unsigned long drawn_fps);
+void outrun_fps_overlay(void);
