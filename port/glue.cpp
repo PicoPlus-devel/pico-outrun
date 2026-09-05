@@ -266,10 +266,14 @@ void outrun_engine_tick(void)
     outrun_audio_pump();
 #endif
 
-    /* Once a second, report what the loop is actually achieving. `fps` is the
-     * real displayed rate - if it is not ~60 the audio rate cannot be right,
-     * because the engine emits rate/config.fps samples per tick. `pushed`
-     * should sit at ~44100. */
+    /* Once a second, update the on-screen counters.
+     *
+     * The matching UART line is OFF by default: printf blocks core0 for long
+     * enough to disturb the frame it lands in, and that is audible. The FPS
+     * overlay (settings menu -> Show FPS) shows the same loop/drawn rates
+     * without the cost. Build with -DOUTRUN_FRAME_STATS=1 to get the full line
+     * back, including the audio counters and the HSTX resync count, when
+     * something needs diagnosing. */
     static uint32_t last_us, frames_since, drawn_since;
     frames_since++;
     if (do_render && run_engine)
@@ -279,12 +283,14 @@ void outrun_engine_tick(void)
     uint32_t now = (uint32_t)Frens::time_us();
     if (now - last_us >= 1000000u)
     {
+        outrun_fps_set(frames_since, drawn_since);
+#if OUTRUN_FRAME_STATS
         uint32_t pushed, dropped, starved, level;
         outrun_audio_stats(&pushed, &dropped, &starved, &level);
-        outrun_fps_set(frames_since, drawn_since);
         printf("[outrun] loop=%lu drawn=%lu audio pushed=%lu dropped=%lu starved=%lu resync=%d\n",
                (unsigned long)frames_since, (unsigned long)drawn_since, (unsigned long)pushed,
                (unsigned long)dropped, (unsigned long)starved, get_video_output_resync_count());
+#endif
         frames_since = 0;
         drawn_since = 0;
         last_us = now;

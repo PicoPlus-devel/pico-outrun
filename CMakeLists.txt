@@ -174,6 +174,15 @@ target_compile_definitions(${projectname} PRIVATE
     OUTRUN_HOT_IN_SRAM=1
 )
 
+# Per-second [outrun] UART line with loop/drawn/audio/resync counters. Off by
+# default: the printf blocks core0 long enough to disturb the frame it lands in,
+# which is audible. The FPS overlay shows the same rates for free.
+#   EXTRA_CMAKE_ARGS=-DOUTRUN_FRAME_STATS=1 ./bld.sh -c 8 -2
+option(OUTRUN_FRAME_STATS "Print per-second frame and audio counters over UART" OFF)
+target_compile_definitions(${projectname} PRIVATE
+    OUTRUN_FRAME_STATS=$<BOOL:${OUTRUN_FRAME_STATS}>
+)
+
 target_compile_options(${projectname} PRIVATE
     # The vendored engine is 2010-era C++ and warns freely; keep it quiet so
     # warnings from port/ and main.cpp stay visible.
