@@ -4,13 +4,16 @@
 # Builds picoOutRun for every supported hardware configuration, in Release.
 # Binaries are copied to the releases folder.
 #
-# RP2350 only - every config is built with -2. HW_CONFIG 3 and 4 are RP2040-only
-# boards and are not supported (Cannonball does not fit in 264 KB of SRAM);
-# HW_CONFIG 11 is deprecated.
+# Only the four HSTX boards with PSRAM are supported: 2, 8, 13 and 14. Every
+# config is built with -2 (RP2350 - the build refuses RP2040).
 #
-# HSTX boards:   2 5 8 13 14
-# PicoDVI boards: 1 6 7 9 10 12
-# The choice is automatic - see GPIOHSTX* in pico_shared/BoardConfigs.cmake.
+# PSRAM is mandatory: the engine's big buffers go there through Frens::f_malloc,
+# so a board without it reports "This board has no PSRAM" and stops.
+#
+# HSTX is mandatory too: the bit-banged PicoDVI path ties the system clock to the
+# pixel clock and cannot exceed 324 MHz, where the engine is too slow, and it puts
+# the sound chain back on core0. The remaining board configs still build, but they
+# are not supported - see README.md.
 # ====================================================================================
 cd `dirname $0` || exit 1
 [ -d releases ] && rm -rf releases
@@ -22,7 +25,7 @@ then
 	echo "Please install picotool from https://github.com/raspberrypi/picotool.git"
 	exit 1
 fi
-HWCONFIGS="1 2 5 6 7 8 9 10 12 13 14"
+HWCONFIGS="2 8 13 14"
 for HWCONFIG in $HWCONFIGS
 do
 	./bld.sh -c $HWCONFIG -2 || exit 1
