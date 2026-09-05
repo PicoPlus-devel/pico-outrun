@@ -38,9 +38,10 @@ Expected as the port progresses:
 
 - **Large arrays move to flash.** `hwtiles::tiles`, `hwtiles::tiles_backup`,
   `hwsprites::sprites` and `hwroad::roads` are about 1.5 MB of RAM upstream. In this port
-  they are decoded at build time by `../tools/mkoutrundata` and read from flash;
-  `tiles_backup` disappears entirely, because the flash copy is itself the unmodified
-  original.
+  they are decoded ahead of time by `../port/outrun_pack.c` — on the host via
+  `../tools/mkoutrundata`, or on the board at boot from a ROM set on the SD card — and read
+  in place from flash or PSRAM; `tiles_backup` disappears entirely, because that copy is
+  itself the unmodified original.
 - **`Video::pixels` disappears.** The renderers write through a palette lookup straight into
   the framebuffer that `pico_shared` already owns, instead of into a separate 143 KB buffer
   of palette indices.

@@ -22,7 +22,10 @@ mkdir -p "$OUT"
 
 build_packer() {
     echo "== building tools/mkoutrundata"
-    gcc -O2 -g -Wall -Wextra -std=c11 tools/mkoutrundata.c -o tools/mkoutrundata
+    # port/outrun_pack.c is the shared load table and decoders - the firmware
+    # compiles the very same file, so verify_decode below certifies both.
+    gcc -O2 -g -Wall -Wextra -std=c11 -Iport \
+        tools/mkoutrundata.c port/outrun_pack.c -o tools/mkoutrundata
 }
 
 build_lutgen() {

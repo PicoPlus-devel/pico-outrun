@@ -138,6 +138,12 @@ list(APPEND OUTRUN_ENGINE_SRC
 
 set(OUTRUN_PORT_SRC
     port/outrun_data.c
+    # Shared verbatim with tools/mkoutrundata: the ROM load table and the
+    # tile/sprite/road decoders. hosttest/verify_decode checks that one file
+    # against Cannonball's own decoders, and so covers the firmware too.
+    port/outrun_pack.c
+    port/outrun_sdload.cpp
+    port/outrun_screen.cpp
     port/config.cpp
     port/romloader.cpp
     port/render.cpp

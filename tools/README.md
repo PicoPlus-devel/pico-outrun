@@ -1,6 +1,6 @@
 # tools/
 
-## `mkoutrundata` (not yet implemented — Milestone 2/3)
+## `mkoutrundata`
 
 Converts an OutRun revision B ROM set into `outrun-data.uf2`, the flash-resident game data
 image. **The ROM set is supplied by the user and is never committed to this repository or
@@ -21,6 +21,31 @@ picotool uf2 convert outrun-data.bin -t bin outrun-data.uf2 -o $OUTRUN_DATA_ADDR
 ```
 
 so the flash address can never disagree with the address compiled into the application.
+
+### Shared with the firmware
+
+The ROM load table, the CRC-32 and the tile, sprite and road decoders are **not** in
+`mkoutrundata.c`. They live in `port/outrun_pack.c`, which both this tool and the firmware
+compile.
+
+The firmware needs them because it can also build the image itself, in PSRAM, from a ROM set
+placed on the SD card when no data image has been flashed. Sharing one source means the two
+images cannot differ, and — more usefully — that `hosttest/verify_decode` certifies the
+firmware's decoders at the same time as the tool's, since there is only one copy to check.
+
+`outrun_pack.c` performs no file I/O and no allocation: the caller supplies the buffers and
+an open/read/close triple, because the host has stdio and `malloc` while the firmware has
+FatFs and `Frens::f_malloc`. It writes the two `uint32` regions in native byte order, since
+the firmware maps them directly as `const uint32_t *`, and therefore requires a little-endian
+host; this is enforced with an `#error` rather than left implicit.
+
+The layout keeps the peak memory cost low enough for the firmware to use it: the verbatim
+regions are scattered straight into the image, the sprite region is decoded in place, and
+only the tile and road sources need a staging buffer, which they use in turn. The peak is
+approximately 2.7 MB rather than the 4.6 MB a naive layout would need. The host tool gets the
+same reduction.
+
+Zip archives are out of scope for both: ROM files must be extracted.
 
 ### Output format
 
@@ -57,7 +82,7 @@ real versions pull in Boost and SDL. Neither affects decoding.
 
 ### Expected ROM set
 
-26 files, approximately 2.2 MB, the MAME `outrun` (revision B) parent set. The
+31 files, approximately 2.2 MB, the MAME `outrun` (revision B) parent set. The
 authoritative list, with CRCs, is `roms.cpp` in the Cannonball source.
 
 | Region | Files |
@@ -70,5 +95,5 @@ authoritative list, with CRCs, is `roms.cpp` in the Cannonball source.
 | `Z80` | `epr-10187.88` |
 | `PCM` | `opr-10193.66` … `opr-10188.71` |
 
-The tool must name any file that is missing or whose CRC does not match, rather than
+Every file that is missing or whose CRC does not match is named, rather than
 producing a subtly incorrect image.

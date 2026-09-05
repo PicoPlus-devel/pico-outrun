@@ -19,14 +19,34 @@ engine is not yet integrated. See `CHANGELOG.md` for what each release contains.
 copyright SEGA and cannot be distributed with this project or with its releases. The
 released `.uf2` files contain no ROM data.
 
-The data is not read from the SD card at runtime. Instead, `tools/mkoutrundata` converts a
-ROM set into `outrun-data.uf2`, a data image that is flashed once to a fixed address and
-read directly from flash by the running application. The conversion performs, at build time,
-the tile, sprite and road decoding that Cannonball would otherwise do into RAM at startup,
-which is what allows the port to fit on an RP2350.
+The tile, sprite and road ROMs are decoded into a single data image before use. Cannonball
+performs that decoding into approximately 1.5 MB of RAM at startup, which an RP2350 does not
+have, so picoOutRun does it ahead of time instead. There are two ways to provide the result,
+and the application tries them in this order.
 
-If the data image has not been flashed, the application reports that the game data is
-missing rather than failing silently.
+**1. Flashed (recommended).** `tools/mkoutrundata.sh` converts a ROM set into
+`outrun-data.uf2`, a data image flashed once to a fixed address and read directly from flash
+while the game runs. This is the fastest route: the game starts immediately.
+
+```sh
+./bld.sh -m -c 8 -2                    # once, to establish the flash address
+tools/mkoutrundata.sh ~/roms/outrun    # writes outrun-data.uf2
+```
+
+**2. From the SD card.** If no data image has been flashed, the application looks for the
+ROM set itself in `/roms/ORUN` on the SD card, and builds the same image in PSRAM at
+startup. This requires no host tools at all — the ROM files are copied across unchanged —
+but it takes a few seconds on every boot and needs approximately 2.7 MB of free PSRAM.
+`/roms/ORUN/outrun` is also searched, since extracting a MAME set commonly produces that
+layout.
+
+The ROM files must be extracted; zip archives are not read. Each file is checked against its
+expected CRC, so an incomplete set, a corrupt file or a different revision is reported by
+name rather than producing a subtly incorrect image.
+
+If neither route has been taken, the application displays a message describing what is
+missing and what to do about it, and the settings menu remains reachable with SELECT + START
+so that BOOTSEL mode can be entered without unplugging the board.
 
 ## Supported hardware
 
@@ -69,12 +89,12 @@ reconfiguration, run `./bld.sh -m -c 8 -2` once and then `make -j$(nproc) -C bui
 
 ## Flashing
 
-Two images are required, both flashed over BOOTSEL or with `picotool`:
+The application, `releases/picoOutRun_<board>.uf2`, is flashed over BOOTSEL or with
+`picotool`.
 
-1. `releases/picoOutRun_<board>.uf2` — the application.
-2. `outrun-data.uf2` — the game data, generated locally from your own ROM set.
-
-The data image only needs to be flashed again when it changes.
+The game data may either be flashed alongside it as `outrun-data.uf2`, generated locally
+from your own ROM set, or placed on the SD card as described under "Game data" above. The
+data image only needs to be flashed again when it changes.
 
 ## Licence
 

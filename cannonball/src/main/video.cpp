@@ -13,7 +13,7 @@
 
 #include "video.hpp"
 #ifdef OUTRUN_GFX_IN_FLASH
-#include "outrun_flash.hpp"
+#include "outrun_gfx.hpp"
 #include "outrun_alloc.hpp"
 #include <new>
 #endif
@@ -127,11 +127,11 @@ int Video::init(Roms* roms, video_settings_t* settings)
     /* picoOutRun: tiles, sprites and road were decoded at build time by
      * tools/mkoutrundata and live in flash. Nothing to convert and nothing to
      * free - the layers just take a pointer. */
-    tile_layer->init(outrun_flash_tiles(), config.video.hires != 0);
+    tile_layer->init(outrun_gfx_tiles(), config.video.hires != 0);
     clear_tile_ram();
     clear_text_ram();
-    sprite_layer->init(outrun_flash_sprites());
-    hwroad.init(outrun_flash_road(), config.video.hires != 0);
+    sprite_layer->init(outrun_gfx_sprites());
+    hwroad.init(outrun_gfx_road(), config.video.hires != 0);
 #else
     // Convert S16 tiles to a more useable format
     tile_layer->init(roms->tiles.rom, config.video.hires != 0);

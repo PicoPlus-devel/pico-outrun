@@ -7,9 +7,15 @@
  * back-ends before any engine code exists.
  *
  * Deliberately different from the sibling emulators, and it stays that way:
- *   - no ROM browser. menu() is never called; the game data lives in flash.
- *   - a missing/unmountable SD card is NOT fatal, because nothing we need is
- *     on it (only settings persistence, which falls back to defaults).
+ *   - no ROM browser. menu() is never called.
+ *   - a missing/unmountable SD card is NOT fatal on its own. Settings simply
+ *     fall back to defaults - and if the game data has been flashed, which is
+ *     the normal case, nothing else on the card is needed either.
+ *
+ * The game data comes from one of two places, tried in this order: the data
+ * .uf2 in flash, or - as a failsafe - a raw OutRun romset in /roms/ORUN, packed
+ * and decoded into PSRAM at boot. See port/outrun_data.h. When neither is
+ * present the board says so on screen rather than showing a test pattern.
  */
 
 #include <cstdio>
@@ -31,6 +37,8 @@
 #include "wiipad.h"
 
 #include "outrun_data.h"
+#include "outrun_pack.h"
+#include "outrun_screen.hpp"
 #include "glue.hpp"
 #include "sdl2/input.hpp"
 
@@ -76,10 +84,9 @@
 
 static uint32_t CPUFreqKHz = OUTRUN_CLOCKFREQ_KHZ;
 
-// OutRun is 320x224 inside the framework's 320x240 framebuffer.
-#define OUTRUN_WIDTH 320
-#define OUTRUN_HEIGHT 224
-#define OUTRUN_YOFFSET ((SCREENHEIGHT - OUTRUN_HEIGHT) / 2) // 8 blank lines top and bottom
+// OUTRUN_WIDTH / OUTRUN_HEIGHT / OUTRUN_YOFFSET, the framebuffer line accessor
+// and the RGB packer all come from port/outrun_screen.hpp, which the error and
+// progress screens share with this file.
 
 // Margins are a PicoDVI line-buffer concept and are forced to 0 when a
 // framebuffer is in use; pass 0 explicitly so the intent is visible.
@@ -136,32 +143,11 @@ const uint8_t g_available_screen_modes_outrun[] = {
     1, // NOSCANLINE_1_1
 };
 
-// ---------------------------------------------------------------------------
-// Framebuffer access, the one place the two video back-ends differ for us.
-// ---------------------------------------------------------------------------
-static inline uint16_t *outrun_line(int line)
-{
-#if HSTX
-    return hstx_getlineFromFramebuffer(line);
-#else
-    return &Frens::framebuffer[line * SCREENWIDTH];
-#endif
-}
-
-// RGB888 -> the back-end's native 16-bit format. The finished port builds a
-// 4096-entry LUT out of OutRun's palette RAM with exactly this conversion.
-static inline uint16_t outrun_rgb(uint8_t r, uint8_t g, uint8_t b)
-{
-#if HSTX // RGB555: 0RRRRRGG GGGBBBBB
-    return ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
-#else    // RGB444: 0000RRRR GGGGBBBB
-    return ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
-#endif
-}
-
 // Eight SMPTE-ish bars over the 224 active lines, with the 8-line letterbox
 // left black, so geometry, colour order and the active area are all verifiable
-// at a glance on a real display. Shown when there is no game data in flash.
+// at a glance on a real display. Reached only from draw_tile_page below, when a
+// region it wanted turns out to be empty; a board with no game data at all gets
+// draw_error_screen(), which explains itself.
 static void draw_test_pattern(void)
 {
     static const uint8_t bars[8][3] = {
@@ -171,7 +157,7 @@ static void draw_test_pattern(void)
 
     for (int y = 0; y < SCREENHEIGHT; y++)
     {
-        uint16_t *dst = outrun_line(y);
+        uint16_t *dst = outrun_fb_line(y);
         bool active = (y >= OUTRUN_YOFFSET) && (y < OUTRUN_YOFFSET + OUTRUN_HEIGHT);
         for (int x = 0; x < SCREENWIDTH; x++)
         {
@@ -188,15 +174,18 @@ static void draw_test_pattern(void)
 
 // MILESTONE 3 check, and a preview of the real renderer.
 //
-// Draws a page of decoded OutRun tiles straight out of flash. Each uint32 is
-// one 8-pixel row at 4bpp, leftmost pixel in the HIGHEST nibble (hwtiles::init
-// builds it with `val = (val << 4) | pix`), and a tile is 8 consecutive words.
+// Draws a page of decoded OutRun tiles straight out of the data image, wherever
+// it lives. Each uint32 is one 8-pixel row at 4bpp, leftmost pixel in the
+// HIGHEST nibble (hwtiles::init builds it with `val = (val << 4) | pix`), and a
+// tile is 8 consecutive words.
 //
 // The real palette lives in OutRun's palette RAM, which the game fills at
 // runtime and no ROM contains, so this uses a synthetic ramp over the 3bpp tile
 // values. The point is not correct colour - it is that recognisable arcade
 // artwork appearing on screen proves the whole chain: the packer decoded
-// correctly, the DATA .uf2 landed at the right address, and XIP reads work.
+// correctly, the image landed where it was meant to, and reads from it work.
+// That makes it a free acceptance test for the SD path too - recognisable tiles
+// mean the on-device decoders ran correctly in PSRAM.
 static void draw_tile_page(uint32_t first_tile)
 {
     uint32_t size = 0;
@@ -224,7 +213,7 @@ static void draw_tile_page(uint32_t first_tile)
 
     for (int y = 0; y < SCREENHEIGHT; y++)
     {
-        uint16_t *dst = outrun_line(y);
+        uint16_t *dst = outrun_fb_line(y);
         int ty = y - OUTRUN_YOFFSET;
         if (ty < 0 || ty >= OUTRUN_HEIGHT)
         {
@@ -243,6 +232,148 @@ static void draw_tile_page(uint32_t first_tile)
         }
     }
     (void)rows;
+}
+
+// ---------------------------------------------------------------------------
+// The two screens shown before the engine exists.
+//
+// Both use the 30-column window of port/outrun_screen.hpp, which is the only
+// span visible in BOTH screen modes - so nothing has to be re-laid-out when the
+// user changes the mode from the settings menu.
+// ---------------------------------------------------------------------------
+#define SCR_BG outrun_rgb(0, 0, 0)
+#define SCR_FG outrun_rgb(200, 200, 200)
+#define SCR_HI outrun_rgb(255, 176, 0)   // OutRun amber
+#define SCR_FILE outrun_rgb(255, 255, 255)
+
+// Passed to outrun_data_init() and called as each ROM file is read and each
+// region decoded. Repaints only the rows that change, so it costs nothing.
+static void loading_progress(int step, int steps, const char *what)
+{
+    static bool painted;
+    if (!painted)
+    {
+        painted = true;
+        outrun_screen_clear(SCR_BG);
+        outrun_screen_text(-1, 1, "picoOutRun", SCR_HI, SCR_BG);
+        outrun_screen_text(0, 4, "Building game data from the", SCR_FG, SCR_BG);
+        outrun_screen_text(0, 5, "romset on the SD card.", SCR_FG, SCR_BG);
+    }
+
+    const int pct = (steps > 0) ? (step * 100) / steps : 0;
+    outrun_screen_bar(8, pct, SCR_HI, SCR_BG);
+
+    /* Padded to the full window width so the previous, longer label is erased
+     * rather than left showing through. The label already carries the file
+     * count - see io_on_file in port/outrun_sdload.cpp. */
+    char line[OUTRUN_TEXT_COLS + 1];
+    snprintf(line, sizeof(line), "%-*s", OUTRUN_TEXT_COLS, what ? what : "");
+    outrun_screen_text(0, 10, line, SCR_FILE, SCR_BG);
+}
+
+// Says what is wrong and what to do about it. Everything here has to fit 30
+// columns; the reason block is rows 3..9 and the remedy block rows 11..20.
+static void draw_error_screen(void)
+{
+    char buf[OUTRUN_TEXT_COLS + 1];
+    int row = 3;
+
+    outrun_screen_clear(SCR_BG);
+    outrun_screen_text(-1, 1, "picoOutRun", SCR_HI, SCR_BG);
+
+    switch (outrun_data_error())
+    {
+    case OUTRUN_DATA_ERR_NO_PSRAM:
+        outrun_screen_text(0, row++, "This board has no PSRAM.", SCR_HI, SCR_BG);
+        outrun_screen_text(0, row++, "picoOutRun cannot run on it.", SCR_FG, SCR_BG);
+        break;
+
+    case OUTRUN_DATA_ERR_NO_SD:
+        outrun_screen_text(0, row++, "No game data, no SD card.", SCR_HI, SCR_BG);
+        break;
+
+    case OUTRUN_DATA_ERR_NO_ROMS:
+        outrun_screen_text(0, row++, "No game data.", SCR_HI, SCR_BG);
+        row++;
+        outrun_screen_text(0, row++, "No OutRun ROM files were", SCR_FG, SCR_BG);
+        outrun_screen_text(0, row++, "found in", SCR_FG, SCR_BG);
+        snprintf(buf, sizeof(buf), "  %s", outrun_data_romdir());
+        outrun_screen_text(0, row++, buf, SCR_FILE, SCR_BG);
+        break;
+
+    case OUTRUN_DATA_ERR_MISSING:
+        outrun_screen_text(0, row++, "Incomplete romset.", SCR_HI, SCR_BG);
+        row++;
+        snprintf(buf, sizeof(buf), "%d of %d ROM files missing:", outrun_data_bad_file_count(),
+                 OUTRUN_PACK_FILE_COUNT);
+        outrun_screen_text(0, row++, buf, SCR_FG, SCR_BG);
+        for (int i = 0; i < OUTRUN_DATA_MAX_BAD_FILES && outrun_data_bad_file(i); i++)
+        {
+            snprintf(buf, sizeof(buf), "  %s", outrun_data_bad_file(i));
+            outrun_screen_text(0, row++, buf, SCR_FILE, SCR_BG);
+        }
+        if (outrun_data_bad_file_count() > OUTRUN_DATA_MAX_BAD_FILES)
+        {
+            snprintf(buf, sizeof(buf), "  ...and %d more",
+                     outrun_data_bad_file_count() - OUTRUN_DATA_MAX_BAD_FILES);
+            outrun_screen_text(0, row++, buf, SCR_FG, SCR_BG);
+        }
+        break;
+
+    case OUTRUN_DATA_ERR_BAD_CRC:
+        outrun_screen_text(0, row++, "Wrong or corrupt ROMs.", SCR_HI, SCR_BG);
+        row++;
+        outrun_screen_text(0, row++, "Checksum failed on:", SCR_FG, SCR_BG);
+        for (int i = 0; i < OUTRUN_DATA_MAX_BAD_FILES && outrun_data_bad_file(i); i++)
+        {
+            snprintf(buf, sizeof(buf), "  %s", outrun_data_bad_file(i));
+            outrun_screen_text(0, row++, buf, SCR_FILE, SCR_BG);
+        }
+        outrun_screen_text(0, row++, "Use the MAME \"outrun\"", SCR_FG, SCR_BG);
+        outrun_screen_text(0, row++, "revision B parent set.", SCR_FG, SCR_BG);
+        break;
+
+    case OUTRUN_DATA_ERR_READ:
+        outrun_screen_text(0, row++, "SD card read error.", SCR_HI, SCR_BG);
+        row++;
+        snprintf(buf, sizeof(buf), "FatFs error %d on:", outrun_data_error_detail());
+        outrun_screen_text(0, row++, buf, SCR_FG, SCR_BG);
+        if (outrun_data_bad_file(0))
+        {
+            snprintf(buf, sizeof(buf), "  %s", outrun_data_bad_file(0));
+            outrun_screen_text(0, row++, buf, SCR_FILE, SCR_BG);
+        }
+        outrun_screen_text(0, row++, "Reseat the card and reset.", SCR_FG, SCR_BG);
+        break;
+
+    case OUTRUN_DATA_ERR_NO_MEMORY:
+        outrun_screen_text(0, row++, "Not enough free PSRAM to", SCR_HI, SCR_BG);
+        outrun_screen_text(0, row++, "build the game data here.", SCR_HI, SCR_BG);
+        row++;
+        snprintf(buf, sizeof(buf), "%d KB short.", outrun_data_error_detail());
+        outrun_screen_text(0, row++, buf, SCR_FG, SCR_BG);
+        break;
+
+    default:
+        outrun_screen_text(0, row++, "No game data.", SCR_HI, SCR_BG);
+        break;
+    }
+
+    /* The remedies. Both routes need the user's own romset, which is never
+     * shipped with the port. */
+    row = 12;
+    outrun_screen_text(0, row++, "Supply the OutRun rev B", SCR_FG, SCR_BG);
+    outrun_screen_text(0, row++, "romset yourself, either by:", SCR_FG, SCR_BG);
+    row++;
+    outrun_screen_text(0, row++, "1) copying the ROM files,", SCR_FG, SCR_BG);
+    outrun_screen_text(0, row++, "   unzipped, to /roms/ORUN", SCR_FG, SCR_BG);
+    outrun_screen_text(0, row++, "   on the SD card, or", SCR_FG, SCR_BG);
+    outrun_screen_text(0, row++, "2) building outrun-data.uf2", SCR_FG, SCR_BG);
+    outrun_screen_text(0, row++, "   with tools/mkoutrundata.sh", SCR_FG, SCR_BG);
+    outrun_screen_text(0, row++, "   and flashing it.", SCR_FG, SCR_BG);
+
+    outrun_screen_text(0, 25, "SELECT+START opens settings,", SCR_HI, SCR_BG);
+    outrun_screen_text(0, 26, "which can enter BOOTSEL mode.", SCR_HI, SCR_BG);
 }
 
 // ---------------------------------------------------------------------------
@@ -405,7 +536,7 @@ static void processPerFrame(void)
         }
         else
         {
-            draw_test_pattern();
+            draw_error_screen();
         }
     }
 }
@@ -473,16 +604,17 @@ int main()
     g_available_screen_modes = g_available_screen_modes_outrun;
     scaleMode8_7_ = Frens::applyScreenMode(settings.screenMode);
 
-    haveData = outrun_data_valid();
+    /* Flash first, then the romset on the SD card. This is the right point in
+     * the sequence: initAll has brought up PSRAM, the SD card and the display,
+     * settings.currentDir is final, and the screen mode has been applied - so
+     * the progress and error screens can both be drawn from here on. */
+    haveData = outrun_data_init(settings.currentDir, sdOk, loading_progress);
     if (haveData)
     {
-        uint32_t sz = 0;
-        for (int r = 0; r < OUTRUN_REGION_COUNT; r++)
-        {
-            outrun_data_region((outrun_region_t)r, &sz);
-            printf("  region %d: %lu bytes\n", r, (unsigned long)sz);
-        }
-        printf("Game data OK at %p - starting the engine.\n", (const void *)outrun_data_base());
+        printf("Game data OK at %p (%s) - starting the engine.\n",
+               (const void *)outrun_data_base(),
+               outrun_data_source() == OUTRUN_DATA_SOURCE_FLASH ? "flash"
+                                                                : "PSRAM, built from the SD card");
         Frens::dumpHeapStats("before engine init");
         engineRunning = outrun_engine_init();
         Frens::dumpHeapStats("after engine init");
@@ -496,9 +628,9 @@ int main()
     }
     else
     {
-        printf("No game data at %p - flash outrun-data.uf2 (tools/mkoutrundata.sh).\n",
-               (const void *)outrun_data_base());
-        draw_test_pattern();
+        printf("[data] no game data (error %d, detail %d) - showing the error screen\n",
+               (int)outrun_data_error(), outrun_data_error_detail());
+        draw_error_screen();
     }
 
     Frens::PaceFrames60fps(true);

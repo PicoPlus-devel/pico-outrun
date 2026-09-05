@@ -51,7 +51,11 @@ fi
 
 if [ ! -x tools/mkoutrundata ]; then
     echo "== building tools/mkoutrundata"
-    gcc -O2 -Wall -Wextra -std=c11 tools/mkoutrundata.c -o tools/mkoutrundata
+    # port/outrun_pack.c holds the load table and the decoders, shared with the
+    # firmware so that this image and the one the board builds from an SD card
+    # romset cannot differ.
+    gcc -O2 -Wall -Wextra -std=c11 -Iport \
+        tools/mkoutrundata.c port/outrun_pack.c -o tools/mkoutrundata
 fi
 
 BIN="$(dirname "$OUT")/$(basename "$OUT" .uf2).bin"

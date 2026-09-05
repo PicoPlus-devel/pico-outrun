@@ -13,3 +13,11 @@ It is published so the board support can be checked on real hardware.
 The game data is not included. OutRun's ROMs are copyright SEGA, so you have to supply
 them yourself and convert them into a data file that is flashed alongside the application.
 See the README for how.
+
+You no longer have to do that conversion on a PC if you would rather not. Copy the OutRun
+ROM files, unzipped, into `/roms/ORUN` on the SD card and the board builds the game data
+itself when it starts. This takes a few seconds on every boot, so flashing the data file is
+still the better option if you have it; the board uses it automatically when it is present.
+
+If the game data is missing altogether, the screen now explains what to do instead of
+showing a test pattern.
