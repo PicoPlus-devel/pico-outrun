@@ -165,11 +165,18 @@ void outrun_fps_overlay(void)
         return;
     }
 
+    /* X position depends on the screen mode. The 8:7 path only shows a WINDOW
+     * of each source line - 252 pixels starting at x=34, stretched to 576 (see
+     * convertScanBuffer12bppScaled16_7(34, 32, 288*2) on PicoDVI and the same
+     * geometry in hstx.c) - so anything left of x=34 is simply not on screen.
+     * At x=5 the overlay was cut off in 8:7. */
+    const int x0 = scaleMode8_7_ ? 40 : 5;
+
     /* The letterbox band above the image - drawing here costs the game nothing,
      * and OUTRUN_YOFFSET is exactly 8 lines, one character tall. */
     for (int line = 0; line < 8 && line < OUTRUN_YOFFSET; line++)
     {
-        uint16_t *dst = fb_line(line) + 5;
+        uint16_t *dst = fb_line(line) + x0;
         for (int i = 0; i < fps_len; i++)
         {
             char slice = getcharslicefrom8x8font(fps_text[i], line & 7);

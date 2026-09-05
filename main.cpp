@@ -350,6 +350,15 @@ static void processPerFrame(void)
         int rval = showSettingsMenu(true);
         prevButtons = 0;
 
+        /* menu.cpp persists on its own, but only down the SAVE path - B backs
+         * out as CANCEL and writes nothing. Write again here: `settings` only
+         * ever holds committed values (the menu edits a `working` copy and
+         * copies it over on SAVE), so this can never persist a cancelled edit,
+         * and it means the file is written even if the menu took an exit path
+         * that skips it. savesettings() logs its result, so a genuine SD
+         * failure shows up on the UART rather than silently doing nothing. */
+        FrensSettings::savesettings();
+
         // The menu can change screen mode; pico_shared needs this re-applied.
         scaleMode8_7_ = Frens::applyScreenMode(settings.screenMode);
 
@@ -438,6 +447,26 @@ int main()
     {
         // Not fatal: only settings persistence lives on the card.
         printf("No SD card - continuing with default settings.\n");
+    }
+    else
+    {
+        /* loadsettings() inside initAll validates settings.currentDir and
+         * resets EVERY setting if that directory is missing:
+         *
+         *     Read 280 bytes from /settings_ORUN.dat
+         *     Directory /roms/ORUN does not exist
+         *     Resetting settings
+         *
+         * currentDir is a ROM-browser concept, and this port has no ROM
+         * browser, so nothing ever creates /roms/ORUN and saved settings were
+         * discarded on every boot. Create it and load again - the second pass
+         * passes the check and applies what was saved.
+         *
+         * Done here rather than in pico_shared because the directory check is
+         * correct for the emulators; it is this port that is unusual. */
+        f_mkdir("/roms");
+        f_mkdir(settings.currentDir); // FR_EXIST on later boots, which is fine
+        FrensSettings::loadsettings();
     }
 
     g_settings_visibility = g_settings_visibility_outrun;
