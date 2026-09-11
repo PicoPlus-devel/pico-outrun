@@ -15,6 +15,10 @@ void outrun_audio_pump(void);
 
 void outrun_audio_reset(void);
 
+// Feed the Fruit Jam VU meter from the ring when it is enabled in the settings.
+// Call from core0 every DISPLAYED frame; a no-op on boards without the meter.
+void outrun_audio_vu_feed(void);
+
 /* Hand the sound chain to core1, paced by the display frame counter, so audio
  * keeps its rate no matter what core0's renderer manages. HSTX only - the
  * PicoDVI path has no equivalent spare-cycle hook. */

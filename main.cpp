@@ -36,6 +36,7 @@
 #include "vumeter.h"
 #include "wiipad.h"
 
+#include "outrun_audio.hpp"
 #include "outrun_data.h"
 #include "outrun_pack.h"
 #include "outrun_screen.hpp"
@@ -107,20 +108,20 @@ static uint32_t CPUFreqKHz = OUTRUN_CLOCKFREQ_KHZ;
 int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
     [MOPT_EXIT_GAME] = -1,               // nowhere to exit to: there is no ROM browser
     [MOPT_RESET_GAME] = 1,
-    [MOPT_REBOOT_TO_LOADER] = 0,        // Phase 2: Frens::isLaunchedFromBootloader()
+    [MOPT_REBOOT_TO_LOADER] = BOOTLOADER_BUILD,        // Phase 2: Frens::isLaunchedFromBootloader()
     [MOPT_SAVE_RESTORE_STATE] = -1,      // no save states
     [MOPT_SCREENMODE] = 1,
     [MOPT_SCANLINES] = 0,
-    [MOPT_SCANLINE_TYPE] = 1,
+    [MOPT_SCANLINE_TYPE] = HSTX,
     [MOPT_FPS_OVERLAY] = 1,
-    [MOPT_AUDIO_ENABLE] = 1,
+    [MOPT_AUDIO_ENABLE] = 0,            // settings.flags.audioEnabled is not wired to the engine
     [MOPT_FRAMESKIP] = 0,
-    [MOPT_DISPLAY_MODE] = 1,
+    [MOPT_DISPLAY_MODE] =  HSTX && ENABLEDVI,
     [MOPT_EXTERNAL_AUDIO] = 1,
     [MOPT_FONT_COLOR] = 0,
     [MOPT_FONT_BACK_COLOR] = 0,
-    [MOPT_FRUITJAM_VUMETER] = 1,
-    [MOPT_FRUITJAM_VOLUME_CONTROL] = 1,
+    [MOPT_FRUITJAM_VUMETER] = ENABLE_VU_METER,
+    [MOPT_FRUITJAM_VOLUME_CONTROL] = ENABLE_VU_METER,
     [MOPT_DMG_PALETTE] = 0,             // Game Boy
     [MOPT_BORDER_MODE] = 0,             // Game Boy
     [MOPT_RAPID_FIRE_ON_A] = 0,
@@ -128,12 +129,15 @@ int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
     [MOPT_AUTO_INSERT_FDS_DISK_A] = 0,  // Famicom Disk System
     [MOPT_AUTO_SWAP_FDS_DISK] = 0,      // Famicom Disk System
     [MOPT_FDS_DISK_SWAP] = 0,           // Famicom Disk System
-    [MOPT_OVERCLOCK] = 1,               // 378 MHz / 1.50 V .. 504 MHz / 1.70 V
+    [MOPT_OVERCLOCK] =  0,              // No overclock now, 378 MHz / 1.50 V .. 504 MHz / 1.70 V
     [MOPT_FM_AUDIO] = 0,                // Master System YM2413
     [MOPT_ENTER_BOOTSEL_MODE] = 1,
     [MOPT_CONTROLLER_TEST] = 1,
     [MOPT_RECENT_GAMES] = 0,            // ROM browser only
     [MOPT_USB_DRIVE_MODE] = 0,
+    [MOPT_CASSETTE] = 0,                // TI-99/4A
+    [MOPT_DISK] = 0,                    // TI-99/4A
+    [MOPT_SERIAL_KEYBOARD] = 0,         // TI-99/4A
 };
 
 const uint8_t g_available_screen_modes_outrun[] = {
@@ -387,21 +391,48 @@ static bool engineRunning = false;
 #define TILES_PER_PAGE ((SCREENWIDTH / 8) * (OUTRUN_HEIGHT / 8)) // 40 x 28
 
 // Merge the pad sources the way the finished port will. Returns pico_shared's
-// io::GamePadState button bits; nespad is LSB-first on the wire
-// (0x01 = A ... 0x80 = Right), whatever the comment in nespad.cpp says.
-static uint32_t readPads(void)
+// io::GamePadState button bits. nespad_states_ext[] is in SNES serial order;
+// bits 2-7 (Select, Start, dpad) mean the same on both pads, bits 0-1 do not:
+// A/B on a NES pad, B/Y on a SNES pad, so the pad type decides. wii is
+// wiipad_read()'s mask, whose bits already carry the printed labels.
+static uint32_t readPads(uint16_t wii)
 {
+    typedef io::GamePadState::Button B;
     uint32_t b = 0;
     auto &gp = io::getCurrentGamePadState(0);
     if (gp.connected)
     {
         b |= gp.buttons;
     }
-    uint8_t n = nespad_states[0];
-    if (n & 0x80) b |= io::GamePadState::Button::RIGHT;
-    if (n & 0x40) b |= io::GamePadState::Button::LEFT;
-    if (n & 0x08) b |= io::GamePadState::Button::START;
-    if (n & 0x04) b |= io::GamePadState::Button::SELECT;
+    uint16_t n = nespad_states_ext[0];
+    if (n & (1u << 2)) b |= B::SELECT;
+    if (n & (1u << 3)) b |= B::START;
+    if (n & (1u << 4)) b |= B::UP;
+    if (n & (1u << 5)) b |= B::DOWN;
+    if (n & (1u << 6)) b |= B::LEFT;
+    if (n & (1u << 7)) b |= B::RIGHT;
+    if (nespad_padtype[0] == NESPAD_TYPE_NES)
+    {
+        if (n & (1u << 0)) b |= B::A;
+        if (n & (1u << 1)) b |= B::B;
+    }
+    else
+    {
+        if (n & (1u << 0)) b |= B::B;
+        if (n & (1u << 1)) b |= B::Y;
+        if (n & (1u << 8)) b |= B::A;
+        if (n & (1u << 9)) b |= B::X;
+    }
+    if (wii & (1u << 0)) b |= B::A;
+    if (wii & (1u << 1)) b |= B::B;
+    if (wii & (1u << 2)) b |= B::SELECT;
+    if (wii & (1u << 3)) b |= B::START;
+    if (wii & (1u << 4)) b |= B::UP;
+    if (wii & (1u << 5)) b |= B::DOWN;
+    if (wii & (1u << 6)) b |= B::LEFT;
+    if (wii & (1u << 7)) b |= B::RIGHT;
+    if (wii & (1u << 8)) b |= B::X;
+    if (wii & (1u << 9)) b |= B::Y;
     return b;
 }
 
@@ -409,8 +440,22 @@ static void processPerFrame(void)
 {
     Frens::PaceFrames60fps(false);
 
+    /* Polls the TLV320 headphone detect and records the state that
+     * port/audio.cpp routes on. Do not poll EXT_AUDIO_POLL_HEADPHONE() again
+     * after it: that consumes a pending event without recording it, and the
+     * audio would stay on the wrong sink until the next plug event. */
     Frens::pollHeadPhoneJack();
-    EXT_AUDIO_POLL_HEADPHONE();
+
+#if ENABLE_VU_METER
+    // Fruit Jam Button 2 toggles the VU meter, as in the sibling emulators.
+    if (isVUMeterToggleButtonPressed())
+    {
+        settings.flags.enableVUMeter = !settings.flags.enableVUMeter;
+        FrensSettings::savesettings();
+        turnOffAllLeds();
+    }
+#endif
+    outrun_audio_vu_feed(); // core0 only - see port/audio.cpp
 
     nespad_read_start();
 #if HSTX
@@ -422,12 +467,13 @@ static void processPerFrame(void)
     nespad_read_finish();
 
     tuh_task();
+    uint16_t wii = 0;
 #if WII_PIN_SDA >= 0 and WII_PIN_SCL >= 0
-    wiipad_read(); // boards without the Wii port do not link wiipad at all
+    wii = wiipad_read(); // boards without the Wii port do not link wiipad at all
 #endif
 
     static uint32_t prevButtons = 0;
-    uint32_t buttons = readPads();
+    uint32_t buttons = readPads(wii);
     uint32_t pressed = buttons & ~prevButtons;
     prevButtons = buttons;
 
@@ -440,7 +486,7 @@ static void processPerFrame(void)
         input.set_button(Input::DOWN, buttons & B::DOWN);
         input.set_button(Input::ACCEL, buttons & B::A);
         input.set_button(Input::BRAKE, buttons & B::B);
-        input.set_button(Input::GEAR1, buttons & B::X);
+        input.set_button(Input::GEAR1, buttons & (B::X | B::SELECT)); // SELECT: NES pads have no X
         input.set_button(Input::START, buttons & B::START);
         input.set_button(Input::COIN, buttons & B::SELECT);
 
@@ -609,6 +655,9 @@ int main()
     g_settings_visibility = g_settings_visibility_outrun;
     g_available_screen_modes = g_available_screen_modes_outrun;
     scaleMode8_7_ = Frens::applyScreenMode(settings.screenMode);
+    // Apply the saved DAC volume now; otherwise it only takes effect after the
+    // settings menu has been opened and closed. No-op without a TLV320.
+    EXT_AUDIO_SETVOLUME(settings.fruitjamVolumeLevel);
 
     /* Flash first, then the romset on the SD card. This is the right point in
      * the sequence: initAll has brought up PSRAM, the SD card and the display,

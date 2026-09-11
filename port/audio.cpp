@@ -19,6 +19,7 @@
 
 #include "FrensHelpers.h"
 #include "settings.h"
+#include "vumeter.h"
 
 #include "engine/audio/osoundint.hpp"
 #include "frontend/config.hpp"
@@ -217,7 +218,13 @@ void OUTRUN_HOT(outrun_audio_pump)(void)
     }
 
 #if EXT_AUDIO_IS_ENABLED
-    if (settings.flags.useExtAudio)
+    /* Same rule as the sibling emulators: the external DAC takes over when it is
+     * chosen in the settings, or when headphones are in the jack (TLV320 boards
+     * with headphone detect). HDMI is then simply not fed; the HSTX driver sends
+     * silence packets on its own when its data-island queue runs dry.
+     * isHeadPhoneJackConnected() is a plain bool that core0 updates every frame
+     * via Frens::pollHeadPhoneJack(), so reading it here on core1 is safe. */
+    if (settings.flags.useExtAudio || Frens::isHeadPhoneJackConnected())
     {
         uint32_t space = (uint32_t)EXT_AUDIO_GET_FREE();
         uint32_t n = std::min(avail, space);
@@ -267,5 +274,44 @@ void OUTRUN_HOT(outrun_audio_pump)(void)
         stat_pushed++;
     }
     rb.advanceWritePointer(n);
+#endif
+}
+
+/* ---------------------------------------------------------------------------
+ * Fruit Jam VU meter.
+ *
+ * Fed from core0, once per displayed frame - never from the core1 sound chain.
+ * The settings menu drives the same WS2812 state machine from core0
+ * (turnOffAllLeds), and two cores writing it would interleave pixels.
+ * pico-genesisPlus keeps its VU meter on core0 for the same reason.
+ *
+ * The samples produced since the last call are read straight out of the ring
+ * without consuming them, so this costs no SRAM and core1 is not involved. The
+ * read races core1's writes; the worst a torn read can do is light one LED
+ * wrongly for one update.
+ * ------------------------------------------------------------------------- */
+void outrun_audio_vu_feed(void)
+{
+#if ENABLE_VU_METER
+    static uint32_t vu_pos;
+    const uint32_t head = ring_head;
+
+    if (!settings.flags.enableVUMeter)
+    {
+        vu_pos = head; // stay current, so switching it on does not replay old audio
+        return;
+    }
+
+    /* A slow core0 frame, or outrun_audio_reset() moving head back to 0, can
+     * leave more behind than the ring still holds. Keep the newest half: older
+     * frames may already be overwritten, and the meter averages anyway. */
+    if (head - vu_pos > RING_FRAMES / 2)
+    {
+        vu_pos = head - RING_FRAMES / 2;
+    }
+    for (; vu_pos != head; vu_pos++)
+    {
+        addSampleToVUMeter(ring[(vu_pos & RING_MASK) * 2]); // left channel, as the siblings do
+    }
 #endif
 }
