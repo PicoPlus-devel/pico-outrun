@@ -9,8 +9,8 @@ attached to a release.**
 Intended usage:
 
 ```sh
-tools/mkoutrundata.sh <romset-dir-or-zip> [-b <build-dir>] [-o outrun-data.uf2]
-tools/mkoutrundata --check <romset-dir-or-zip>     # verify without writing
+tools/mkoutrundata.sh <romset-dir> [-b <build-dir>] [-o outrun-data.uf2]
+tools/mkoutrundata <romset-dir> --check            # verify without writing
 ```
 
 The wrapper reads `OUTRUN_DATA_ADDR` from `<build-dir>/outrun_flashmap.env`, which

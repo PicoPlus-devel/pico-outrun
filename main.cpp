@@ -1,13 +1,13 @@
 /*
  * picoOutRun - OutRun arcade port (Cannonball engine) for RP2350.
  *
- * MILESTONE 1: skeleton only. This boots the pico_shared framework the way the
- * finished port will, and then draws a static test pattern instead of running
- * the game. Its job is to prove the toolchain, the board matrix and both video
- * back-ends before any engine code exists.
+ * Boots the pico_shared framework, finds the game data and runs Cannonball on
+ * core0 from processPerFrame(). The engine glue lives in port/; this file wires
+ * up the clocks, the settings menu, input, and the loading and error screens.
  *
  * Deliberately different from the sibling emulators, and it stays that way:
- *   - no ROM browser. menu() is never called.
+ *   - no ROM browser. menu() is never called; only the in-game settings menu
+ *     (SELECT + START) is used.
  *   - a missing/unmountable SD card is NOT fatal on its own. Settings simply
  *     fall back to defaults - and if the game data has been flashed, which is
  *     the normal case, nothing else on the card is needed either.
@@ -15,7 +15,7 @@
  * The game data comes from one of two places, tried in this order: the data
  * .uf2 in flash, or - as a failsafe - a raw OutRun romset in /roms/ORUN, packed
  * and decoded into PSRAM at boot. See port/outrun_data.h. When neither is
- * present the board says so on screen rather than showing a test pattern.
+ * present the board shows an error screen that says what is missing.
  */
 
 #include <cstdio>
@@ -46,10 +46,11 @@
 // ---------------------------------------------------------------------------
 // Clocks.
 //
-// Cannonball runs single-core on core0: core1 is owned by the display driver on
-// every path (coreFB_main on PicoDVI, video_output_core1_run on HSTX), so all
-// the engine and render headroom has to come out of the core clock. These are
-// the pairings pico_shared/FlashParams.cpp knows about.
+// Cannonball runs single-core on core0. core1 is owned by the display driver
+// (coreFB_main on PicoDVI, video_output_core1_run on HSTX), and on HSTX it also
+// runs the sound chain from the driver's background task, so all the engine
+// and render headroom has to come out of the core clock. These are the pairings
+// pico_shared/FlashParams.cpp knows about.
 // ---------------------------------------------------------------------------
 #if !HSTX
 #define OUTRUN_CLOCKFREQ_KHZ 324000
@@ -57,19 +58,16 @@
 #define OUTRUN_VOLTAGE VREG_VOLTAGE_1_30
 #define OUTRUN_MAX_VOLTAGE VREG_VOLTAGE_1_30
 #else
-/* Defaults to 378 MHz / 1.50 V, with 504 MHz / 1.70 V available as an opt-in.
- * This is exactly pico_snesPlus's arrangement, and for the same reason: the
- * higher clock is worth having on a CPU-bound engine, but not worth shipping as
- * the default.
+/* 378 MHz / 1.50 V on every HSTX board. The limits allow 504 MHz / 1.70 V, as in
+ * pico_snesPlus, but that opt-in is not reachable here: pico_shared offers
+ * Overclock only in the ROM browser's settings menu, never in-game (menu.cpp
+ * skips MOPT_OVERCLOCK when calledFromGame), and this port only has the in-game
+ * menu. See MOPT_OVERCLOCK below.
  *
- * 504 MHz needs 1.70 V - snesPlus records that 1.60-1.65 V hardfaults in heavy
- * scenes - and its comment warns that 1.7 V "CAN CAUSE DAMAGE", being above the
- * RP2350's nominal core voltage. So it stays behind a deliberate choice rather
- * than being the value everyone gets.
- *
- * Options -> Overclock in the settings menu writes the chosen clock/voltage pair
- * to flash params, which initAll picks up on the next boot. No reflash needed to
- * move between the two. */
+ * Should it ever be exposed: 504 MHz needs 1.70 V - snesPlus records that
+ * 1.60-1.65 V hardfaults in heavy scenes - and its comment warns that 1.7 V
+ * "CAN CAUSE DAMAGE", being above the RP2350's nominal core voltage. So it has
+ * to stay a deliberate choice rather than the value everyone gets. */
 #define OUTRUN_CLOCKFREQ_KHZ 378000
 #define OUTRUN_VOLTAGE VREG_VOLTAGE_1_50
 #define OUTRUN_MIN_CLOCKFREQ_KHZ 378000
@@ -102,22 +100,24 @@ static uint32_t CPUFreqKHz = OUTRUN_CLOCKFREQ_KHZ;
 // Settings menu wiring.
 //
 // Positional, indexed by MenuSettingsIndex - append only, never reorder.
-// 1 = shown, 0 = hidden. Every entry is listed: C++ designated initializers may
-// not skip members, so a gap is a compile error, not a zero.
+// 1 = shown, 0 = hidden, -1 = never shown. 0 and -1 differ only for Exit, Save/
+// Restore state and Reset, which the in-game menu shows unless they are -1.
+// Every entry is listed: C++ designated initializers may not skip members, so a
+// gap is a compile error, not a zero.
 // ---------------------------------------------------------------------------
 int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
     [MOPT_EXIT_GAME] = -1,               // nowhere to exit to: there is no ROM browser
     [MOPT_RESET_GAME] = 1,
-    [MOPT_REBOOT_TO_LOADER] = BOOTLOADER_BUILD,        // Phase 2: Frens::isLaunchedFromBootloader()
+    [MOPT_REBOOT_TO_LOADER] = BOOTLOADER_BUILD, // bootloader builds only; Phase 2, not verified
     [MOPT_SAVE_RESTORE_STATE] = -1,      // no save states
     [MOPT_SCREENMODE] = 1,
-    [MOPT_SCANLINES] = 0,
+    [MOPT_SCANLINES] = 0,               // covered by the screen modes below
     [MOPT_SCANLINE_TYPE] = HSTX,
     [MOPT_FPS_OVERLAY] = 1,
     [MOPT_AUDIO_ENABLE] = 0,            // settings.flags.audioEnabled is not wired to the engine
     [MOPT_FRAMESKIP] = 0,
     [MOPT_DISPLAY_MODE] =  HSTX && ENABLEDVI,
-    [MOPT_EXTERNAL_AUDIO] = 1,
+    [MOPT_EXTERNAL_AUDIO] = EXT_AUDIO_IS_ENABLED,
     [MOPT_FONT_COLOR] = 0,
     [MOPT_FONT_BACK_COLOR] = 0,
     [MOPT_FRUITJAM_VUMETER] = ENABLE_VU_METER,
@@ -129,12 +129,12 @@ int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
     [MOPT_AUTO_INSERT_FDS_DISK_A] = 0,  // Famicom Disk System
     [MOPT_AUTO_SWAP_FDS_DISK] = 0,      // Famicom Disk System
     [MOPT_FDS_DISK_SWAP] = 0,           // Famicom Disk System
-    [MOPT_OVERCLOCK] =  0,              // No overclock now, 378 MHz / 1.50 V .. 504 MHz / 1.70 V
+    [MOPT_OVERCLOCK] =  0,              // never offered in-game anyway; see the clock notes above
     [MOPT_FM_AUDIO] = 0,                // Master System YM2413
     [MOPT_ENTER_BOOTSEL_MODE] = 1,
     [MOPT_CONTROLLER_TEST] = 1,
     [MOPT_RECENT_GAMES] = 0,            // ROM browser only
-    [MOPT_USB_DRIVE_MODE] = 0,
+    [MOPT_USB_DRIVE_MODE] = 0,          // shown regardless: FRENS_FORCE_USB_MSC_IN_SETTINGS in CMakeLists.txt
     [MOPT_CASSETTE] = 0,                // TI-99/4A
     [MOPT_DISK] = 0,                    // TI-99/4A
     [MOPT_SERIAL_KEYBOARD] = 0,         // TI-99/4A
@@ -176,7 +176,8 @@ static void draw_test_pattern(void)
     }
 }
 
-// MILESTONE 3 check, and a preview of the real renderer.
+// Fallback tile viewer, shown when outrun_engine_init() fails; LEFT/RIGHT page
+// through the tiles.
 //
 // Draws a page of decoded OutRun tiles straight out of the data image, wherever
 // it lives. Each uint32 is one 8-pixel row at 4bpp, leftmost pixel in the
@@ -239,7 +240,7 @@ static void draw_tile_page(uint32_t first_tile)
 }
 
 // ---------------------------------------------------------------------------
-// The two screens shown before the engine exists.
+// The loading and error screens, drawn before the engine starts.
 //
 // Both use the 30-column window of port/outrun_screen.hpp, which is the only
 // span visible in BOTH screen modes - so nothing has to be re-laid-out when the
@@ -381,7 +382,9 @@ static void draw_error_screen(void)
 }
 
 // ---------------------------------------------------------------------------
-// Per-frame framework housekeeping. Same shape the finished port keeps.
+// Once per frame: pacing, headphone detect, VU meter, input and the settings
+// menu, then one engine tick - or, without the engine, the tile viewer or the
+// error screen.
 // ---------------------------------------------------------------------------
 static bool showSettings = false;
 static uint32_t tilePage = 0;
@@ -390,7 +393,7 @@ static bool engineRunning = false;
 
 #define TILES_PER_PAGE ((SCREENWIDTH / 8) * (OUTRUN_HEIGHT / 8)) // 40 x 28
 
-// Merge the pad sources the way the finished port will. Returns pico_shared's
+// Merge every pad source into one. Returns pico_shared's
 // io::GamePadState button bits. nespad_states_ext[] is in SNES serial order;
 // bits 2-7 (Select, Start, dpad) mean the same on both pads, bits 0-1 do not:
 // A/B on a NES pad, B/Y on a SNES pad, so the pad type decides. wii is
@@ -503,9 +506,8 @@ static void processPerFrame(void)
     }
 
     /* SELECT + START opens the settings menu. This MUST come before the engine
-     * tick below: it used to sit after it, behind an early return left over from
-     * when the tile viewer was the main path, so the menu was unreachable the
-     * moment the engine started. */
+     * tick below, which returns early: anything placed after it never runs
+     * once the engine is going. */
     if ((buttons & io::GamePadState::Button::SELECT) && (buttons & io::GamePadState::Button::START))
     {
         showSettings = true;
@@ -552,6 +554,8 @@ static void processPerFrame(void)
         {
             repaint = true;
         }
+        /* Without game data there is nothing to return to. Reboot, so a romset
+         * just copied onto the card in USB drive mode is picked up. */
         if ( !haveData) {
             printf("Rebooting due to missing data...\n");
             watchdog_reboot(0, 0, 0);
@@ -598,9 +602,10 @@ int main()
     Frens::setOverclockLimits(OUTRUN_MIN_CLOCKFREQ_KHZ, OUTRUN_MAX_CLOCKFREQ_KHZ,
                               OUTRUN_MIN_VOLTAGE, OUTRUN_MAX_VOLTAGE);
 
-    /* A clock/voltage pair chosen from the settings menu wins over the default,
-     * so an unstable overclock can be walked back on the device. Same pattern as
-     * pico_snesPlus. */
+    /* A valid clock/voltage pair in flash params wins over the default. Nothing
+     * in this port writes one - the Overclock entry is never offered, see the
+     * clock notes at the top - so in practice this is the default. Kept in the
+     * pico_snesPlus shape so exposing the entry later needs no change here. */
     Frens::FlashParams *flashParams = (Frens::FlashParams *)FLASHPARAM_ADDRESS;
     if (Frens::validateFlashParams(*flashParams))
     {
@@ -615,8 +620,9 @@ int main()
 
     FrensSettings::initSettings(FrensSettings::OUTRUN);
 
-    // No ROM is ever selected: the game data is in flash. initAll() only looks
-    // at this buffer on the menu's watchdog-reboot path, which we never take.
+    // No ROM is ever selected: the game data comes from outrun_data_init()
+    // below. initAll() only looks at this buffer on the ROM browser's
+    // watchdog-reboot path, which this port never takes.
     char dummyRom[FF_MAX_LFN];
     dummyRom[0] = 0;
    
@@ -627,7 +633,9 @@ int main()
   
     if (!sdOk)
     {
-        // Not fatal: only settings persistence lives on the card.
+        // Not fatal: settings fall back to defaults, and with the data image
+        // flashed nothing else on the card is needed. Without it,
+        // outrun_data_init() reports the missing card on the error screen.
         printf("No SD card - continuing with default settings.\n");
     }
     else

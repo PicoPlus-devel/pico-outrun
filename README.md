@@ -1,7 +1,7 @@
 # pico-outrun
 
 > [!NOTE]
-> There is no release yet. No binaries are published, so the only way to run this is to build it yourself — see [Building from source](#building-from-source). The port is under active development.
+> Version 0.1 is the first release. Binaries for the four supported configurations are available on the [Releases](https://github.com/PicoPlus-devel/pico-outrun/releases) page. The port is under active development.
 
 **pico-outrun** is a port of the arcade game **OutRun** to RP2350-based microcontroller boards with PSRAM, with video and audio over HDMI. The game engine is [Cannonball](https://github.com/djyt/cannonball) by Chris White, in which the original 68000 and Z80 assembler has been rewritten in C++. This is therefore a native port rather than an arcade emulator: the code runs directly on the RP2350 and only the artwork, sound samples and level data come from the original ROMs.
 
@@ -36,8 +36,7 @@ Worth knowing before you start:
 - **Full speed is not held yet.** Driving a 68000-era arcade game on a microcontroller is demanding, and the frame rate and with it the game speed still vary with what is on screen. Tuning the balance between the engine tick and the renderer is where the current work is; expect the speed to change, in both directions, while that continues.
 - **There is no ROM browser.** The board boots straight into OutRun. There is only one game, so there is nothing to choose from and no file menu.
 - **No save states, and high scores are not kept.** A high score survives until the board is reset or powered off.
-- **A USB controller is required to play.** A pad on the GPIO NES/SNES controller port can steer and press Start and Coin, but accelerate, brake and gear are not mapped to it yet, and the Wii Classic port is not wired to the engine at all. See [Controllers](#controllers).
-- **Not launchable from [pico-bootLoader](https://github.com/PicoPlus-devel/pico-bootLoader) yet.** The build can produce a bootloader-format image, but it has not been verified, and *Return to emulator selection* is hidden in the settings menu.
+- **Steering is digital.** The analog stick of a USB gamepad steers in the same way as the d-pad; proportional steering is not supported yet. See [Controllers](#controllers).
 - Development and testing take place primarily on the Adafruit Fruit Jam. The other supported boards need to be more thoroughly tested.
 
 ***
@@ -54,6 +53,8 @@ The tile, sprite and road ROMs are stored in a packed arcade-specific layout and
 ./bld.sh -m -c 8 -2                    # once, to establish the flash address
 tools/mkoutrundata.sh ~/roms/outrun    # writes outrun-data.uf2
 ```
+
+The first command only configures the build, to establish the flash address the data image is written to; it needs the Pico SDK, see [Building from source](#building-from-source). The address is the same for all four supported configurations, so one data image works with every released binary.
 
 Flash `outrun-data.uf2` the same way as the application, over BOOTSEL or with `picotool`. It only has to be flashed again when it changes, so reflashing the application later leaves the game data in place.
 
@@ -79,8 +80,9 @@ An RP2350 board with 8 MB of PSRAM is required, and video must run over HSTX. On
 Notes per configuration:
 
 - **HW_CONFIG 2**: a plain Raspberry Pi Pico 2 does not work — it has no PSRAM. The Pimoroni Pico Plus 2 (with onboard PSRAM) is required. The [PicoNES PCB](#picones-pcb) is the tidy version of this configuration; it needs design v2.6 or later, which is the first that can host a Pimoroni Pico Plus 2. The two builds take different microSD breakouts: on a breadboard the [Adafruit Micro-SD breakout board+](https://www.adafruit.com/product/254), on the PCB the smaller [Adafruit Micro SD SPI or SDIO breakout](https://www.adafruit.com/product/4682), which is the footprint the board is laid out for.
-- **HW_CONFIG 8**: no additional hardware is required apart from a USB game controller. Audio is output through the monitor and the built-in speaker or headphone jack.
+- **HW_CONFIG 8**: no additional hardware is required apart from a USB game controller. Button 2 switches the NeoPixel VU meter on and off.
 - **HW_CONFIG 14**: the Feather RP2350 is sold in two variants: [with 8 MB PSRAM onboard](https://www.adafruit.com/product/6130) and [without PSRAM](https://www.adafruit.com/product/6000). On the variant without PSRAM, a PSRAM chip must be soldered onto the board separately.
+- **Audio** is sent over HDMI by default. Configurations 8, 13 and 14 also have an I2S audio output, selected with *External Audio* in the settings menu; on the Fruit Jam, plugging in headphones selects it automatically. Configuration 2 has HDMI audio only.
 
 > [!IMPORTANT]
 > Unlike the sister projects, the build does not refuse a configuration without PSRAM: the other board configurations known from those projects still compile and flash. They will not run. A board without PSRAM reports *"This board has no PSRAM. picoOutRun cannot run on it."* at startup, and the configurations that fall back to the bit-banged PicoDVI driver are too slow for the engine — see [Overclocking](#overclocking).
@@ -140,10 +142,10 @@ Design v2.6 added through-holes, and that is what makes a Pimoroni Pico Plus 2 �
 - A [Pimoroni Pico Plus 2](https://shop.pimoroni.com/products/pimoroni-pico-plus-2?variant=42092668289107) with **male headers** soldered on ([these](https://a.co/d/dSNPuyo) fit), plugged into the through-holes of a v2.6 or later board.
 - [Adafruit DVI Breakout Board — For HDMI Source Devices](https://www.adafruit.com/product/4984)
 - [Adafruit Micro SD SPI or SDIO Card Breakout Board — 3V ONLY!](https://www.adafruit.com/product/4682) — note this is **not** the Micro-SD breakout board+ used in the breadboard build; the PCB is laid out for this smaller one. The card is only needed for the SD-card route to the [game data](#game-data); with the data image flashed, the game runs without a card.
-- [Micro USB to OTG Y-cable](https://a.co/d/b9t11rl) — a USB controller is required to play, and the Y-cable powers the board and connects the controller at the same time.
+- [Micro USB to OTG Y-cable](https://a.co/d/b9t11rl) — needed for a USB controller; the Y-cable powers the board and connects the controller at the same time.
 - Micro USB power supply.
 - Optional: an on/off switch, such as [this one](https://www.kiwi-electronics.com/en/spdt-slide-switch-410?search=KW-2467).
-- Optional: [one or two NES controller ports](https://www.zedlabz.com/products/controller-connector-port-for-nintendo-nes-console-7-pin-90-degree-replacement-2-pack-black-zedlabz) — usable for steering and Start/Coin only at the moment, see [Controllers](#controllers).
+- Optional: [one or two NES controller ports](https://www.zedlabz.com/products/controller-connector-port-for-nintendo-nes-console-7-pin-90-degree-replacement-2-pack-black-zedlabz) — only the first port is used, since OutRun is a single-player game. See [Controllers](#controllers).
 
 Audio on this configuration is carried over HDMI.
 
@@ -173,7 +175,7 @@ An SD card is optional. With the game data flashed, the game runs without one, a
 A card is used for two things:
 
 1. **The ROM set**, if you would rather not build the data image on a PC. Format the card as FAT32 (recommended) or exFAT and copy the extracted OutRun ROM files into `/roms/ORUN`. The folder is created automatically on first boot. See [Game data](#game-data).
-2. **Settings.** Screen mode, scanlines, audio and the other options from the settings menu are stored in `/settings_ORUN.dat` in the root of the card and are remembered across restarts. Without a card the settings revert to their defaults on every boot.
+2. **Settings.** Screen mode, audio output and the other options from the settings menu are stored in `/settings_ORUN.dat` in the root of the card and are remembered across restarts. Without a card the settings revert to their defaults on every boot.
 
 There are no save files: the game has no save states, and high scores are not written to the card.
 
@@ -201,15 +203,15 @@ Points to note:
 
 ## Controllers
 
-> [!IMPORTANT]
-> A USB controller is required to play. The other controller types are wired up only partly, and the car cannot be driven with them yet.
-
 | Controller | What works |
 | --- | --- |
-| USB gamepad (XInput, DualShock 4 / DualSense, generic HID, 8BitDo) | Everything — steering, accelerate, brake, gear, Start and Coin, and the settings menu. Buttons are read by position, so the right-hand face button accelerates, the bottom one brakes and the top one changes gear: **B / A / Y** on an Xbox pad, **Circle / Cross / Triangle** on a PlayStation pad. If the pad has an analog stick, the left stick steers proportionally; the d-pad steers as well. |
+| USB gamepad (XInput, DualShock 4 / DualSense, generic HID, 8BitDo) | Everything — steering, accelerate, brake, gear, Start and Coin, and the settings menu. Buttons are read by position, so the right-hand face button accelerates, the bottom one brakes and the top one changes gear: **B / A / Y** on an Xbox pad, **Circle / Cross / Triangle** on a PlayStation pad. The d-pad steers, and so does the left analog stick, but only digitally, in the same way as the d-pad. |
 | USB keyboard | Playable: **X** accelerates, **Z** brakes, **C** changes gear, **S** is Start, **A** is Coin, and the arrow keys steer. |
-| NES or SNES controller on the GPIO port | Steering (Left/Right), **Start** and **Select** (insert coin), and the Select + Start combination that opens the settings menu. **Accelerate, brake and gear are not mapped**, so the car cannot be driven with it. |
-| Wii Classic / SNES-Classic-mini pad (I2C port) | Not mapped in game. |
+| SNES controller on the GPIO port | Everything: **A** accelerates, **B** brakes, **X** changes gear. |
+| NES controller on the GPIO port | Everything: **A** accelerates, **B** brakes. The NES controller has no third button, so **Select** changes gear; it also acts as the coin button. |
+| Wii Classic / SNES-Classic-mini pad (I2C port) | Everything, with the same button labels as the SNES controller. |
+
+Only one controller is read: the first USB gamepad or keyboard, the first GPIO controller port and the Wii port are combined into one input.
 
 See the [pico-infonesPlus README](https://github.com/PicoPlus-devel/pico-infonesPlus#gamecontroller-support) for general controller notes and troubleshooting.
 
@@ -217,19 +219,19 @@ See the [pico-infonesPlus README](https://github.com/PicoPlus-devel/pico-infones
 
 ## In-game controls
 
-| Action | Button | Xbox pad | PlayStation pad | Keyboard |
-| --- | --- | --- | --- | --- |
-| Steer | D-pad Left/Right, or the left analog stick | Stick / d-pad | Stick / d-pad | Arrow keys |
-| Accelerate | A (right-hand face button) | B | Circle | X |
-| Brake | B (bottom face button) | A | Cross | Z |
-| Gear (high/low) | X (top face button) | Y | Triangle | C |
-| Start | Start | Menu | Options | S |
-| Insert coin | Select | View | Share | A |
-| Settings menu | Select + Start | View + Menu | Share + Options | A + S |
+| Action | SNES / Wii Classic | Xbox pad | PlayStation pad | NES controller | Keyboard |
+| --- | --- | --- | --- | --- | --- |
+| Steer | D-pad Left/Right | Stick / d-pad | Stick / d-pad | D-pad | Arrow keys |
+| Accelerate | A (right-hand face button) | B | Circle | A | X |
+| Brake | B (bottom face button) | A | Cross | B | Z |
+| Gear (high/low) | X (top face button) | Y | Triangle | Select | C |
+| Start | Start | Menu | Options | Start | S |
+| Insert coin | Select | View | Share | Select | A |
+| Settings menu | Select + Start | View + Menu | Share + Options | Select + Start | A + S |
 
 The machine is set to free play, so Start alone begins a game; the coin button is there for completeness.
 
-**Select + Start** opens the settings menu while the game keeps its state; leaving the menu returns to where you were. From there you can reset the game or change settings: screen mode (8:7 or 1:1, with or without scanlines), the frame rate display, audio on/off, display mode, external audio, board-specific options such as the speaker volume and the NeoPixel VU meter on the Fruit Jam, the controller test screen, [USB drive mode](#usb-drive-mode), and BOOTSEL mode. Settings are remembered across restarts when an SD card is present.
+**Select + Start** opens the settings menu while the game keeps its state; leaving the menu returns to where you were. From there you can reset the game or change settings: screen mode (8:7 or 1:1, with or without scanlines) and scanline type, the frame rate display, display mode (HDMI or DVI), external audio on boards with an I2S audio output, board-specific options such as the speaker volume and the NeoPixel VU meter on the Fruit Jam, the controller test screen, [USB drive mode](#usb-drive-mode), and BOOTSEL mode. Settings are remembered across restarts when an SD card is present.
 
 Entries that the sister projects offer are absent here because they have nothing to act on: there is no *Quit game* (there is no ROM browser to return to), no save states, no frame skip setting and no *Return to emulator selection*.
 
