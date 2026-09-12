@@ -1,7 +1,7 @@
 # pico-outrun
 
 > [!NOTE]
-> Version 0.1 is the first release. Binaries for the four supported configurations are available on the [Releases](https://github.com/PicoPlus-devel/pico-outrun/releases) page. The port is under active development.
+> Version 0.2 is the current release. Binaries for the four supported configurations are available on the [Releases](https://github.com/PicoPlus-devel/pico-outrun/releases) page.
 
 **pico-outrun** is a port of the arcade game **OutRun** to RP2350-based microcontroller boards with PSRAM, with video and audio over HDMI. The game engine is [Cannonball](https://github.com/djyt/cannonball) by Chris White, in which the original 68000 and Z80 assembler has been rewritten in C++. This is therefore a native port rather than an arcade emulator: the code runs directly on the RP2350 and only the artwork, sound samples and level data come from the original ROMs.
 
@@ -145,7 +145,7 @@ Design v2.6 added through-holes, and that is what makes a Pimoroni Pico Plus 2 �
 - [Micro USB to OTG Y-cable](https://a.co/d/b9t11rl) — needed for a USB controller; the Y-cable powers the board and connects the controller at the same time.
 - Micro USB power supply.
 - Optional: an on/off switch, such as [this one](https://www.kiwi-electronics.com/en/spdt-slide-switch-410?search=KW-2467).
-- Optional: [one or two NES controller ports](https://www.zedlabz.com/products/controller-connector-port-for-nintendo-nes-console-7-pin-90-degree-replacement-2-pack-black-zedlabz) — only the first port is used, since OutRun is a single-player game. See [Controllers](#controllers).
+- Optional: [one or two NES controller ports](https://www.zedlabz.com/products/controller-connector-port-for-nintendo-nes-console-7-pin-90-degree-replacement-2-pack-black-zedlabz) — OutRun is a single-player game, so a second port is not required, but a controller in either port can be used. See [Controllers](#controllers).
 
 Audio on this configuration is carried over HDMI.
 
@@ -211,7 +211,7 @@ Points to note:
 | NES controller on the GPIO port | Everything: **A** accelerates, **B** brakes. The NES controller has no third button, so **Select** changes gear; it also acts as the coin button. |
 | Wii Classic / SNES-Classic-mini pad (I2C port) | Everything, with the same button labels as the SNES controller. |
 
-Only one controller is read: the first USB gamepad or keyboard, the first GPIO controller port and the Wii port are combined into one input.
+OutRun is a single-player game, so every controller drives the same car: the first USB gamepad or keyboard, both GPIO controller ports and the Wii port are combined into one input. Each GPIO port is read separately, so the two ports may hold different types of controller.
 
 See the [pico-infonesPlus README](https://github.com/PicoPlus-devel/pico-infonesPlus#gamecontroller-support) for general controller notes and troubleshooting.
 

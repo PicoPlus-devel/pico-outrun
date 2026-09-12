@@ -1,9 +1,30 @@
-# v0.1
+# pico-outRun
 
-First release of pico-outrun, a port of the arcade game OutRun to RP2350 boards with PSRAM,
-based on the Cannonball engine. The game plays from attract mode through a full race, with
-music and sound effects. It is still work in progress: the game speed is not constant yet
-and varies with what is on screen.
+pico-outrun is a port of the arcade game OutRun to RP2350 boards with PSRAM, based on the
+Cannonball engine
+
+# Changelog
+
+## v0.2
+
+Two fixes for controllers on the GPIO ports.
+
+- **Clone and aftermarket NES controllers now work during the game.** Their A and B buttons
+  only did something in the settings menu, so there was no way to accelerate or brake while
+  driving. Original NES controllers, SNES controllers, and everything on USB or the Wii port
+  were not affected.
+- **A controller in the second port now plays the game.** Until now it could only be used in
+  the settings menu. Both ports now steer the car, so it no longer matters which one is used,
+  and the two ports may hold different types of controller.
+
+## v0.1
+
+Initial release.
+
+pico-outrun is a port of the arcade game OutRun to RP2350 boards with PSRAM, based on the
+Cannonball engine. The game plays from attract mode through a full race, with music and sound
+effects. It is still work in progress: the game speed is not constant yet and varies with what
+is on screen.
 
 ## Supported boards
 
