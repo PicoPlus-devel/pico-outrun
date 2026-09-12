@@ -393,28 +393,35 @@ static bool engineRunning = false;
 
 #define TILES_PER_PAGE ((SCREENWIDTH / 8) * (OUTRUN_HEIGHT / 8)) // 40 x 28
 
-// Merge every pad source into one. Returns pico_shared's
-// io::GamePadState button bits. nespad_states_ext[] is in SNES serial order;
-// bits 2-7 (Select, Start, dpad) mean the same on both pads, bits 0-1 do not:
-// A/B on a NES pad, B/Y on a SNES pad, so the pad type decides. wii is
-// wiipad_read()'s mask, whose bits already carry the printed labels.
-static uint32_t readPads(uint16_t wii)
+// One GPIO port's pad in io::GamePadState button bits, so a pad in a DE-9
+// port drives the same bits as the USB pad with the same buttons on it.
+// n is that port's nespad_states_ext[], in SNES serial order: bits 2-7
+// (Select, Start, dpad) mean the same on both pad shapes, bits 0-1 do not -
+// A/B on a NES pad, B/Y on a SNES pad - so the pad type decides.
+//
+// The type is read as "SNES or not", never as "NES or not". Only an original
+// NES pad announces itself every frame (its 4021's serial input is grounded,
+// so the trailing ID nibble reads as all ones); clone and aftermarket pads
+// idle that line high and come back as UNKNOWN, bit for bit indistinguishable
+// from an idle SNES pad. Testing for NES therefore sent those clones down the
+// SNES branch, where their A lands on io B (brake) and their B on io Y
+// (nothing) - no accelerator at all, while the settings menu stayed usable
+// because menu.cpp's nespadMenuBits() already asks the question this way.
+// Bits 8-11 are SNES A/X/L/R and a two-button pad can never set them, so a
+// port only becomes SNES by proving it (nespad_decode() latches it until a NES
+// ID nibble clears it again). Same rule in pico-infonesPlus's nespadGameBits()
+// and pico-duke3D's padIsNes().
+static uint32_t nespadGameBits(uint16_t n, uint8_t type)
 {
     typedef io::GamePadState::Button B;
     uint32_t b = 0;
-    auto &gp = io::getCurrentGamePadState(0);
-    if (gp.connected)
-    {
-        b |= gp.buttons;
-    }
-    uint16_t n = nespad_states_ext[0];
     if (n & (1u << 2)) b |= B::SELECT;
     if (n & (1u << 3)) b |= B::START;
     if (n & (1u << 4)) b |= B::UP;
     if (n & (1u << 5)) b |= B::DOWN;
     if (n & (1u << 6)) b |= B::LEFT;
     if (n & (1u << 7)) b |= B::RIGHT;
-    if (nespad_padtype[0] == NESPAD_TYPE_NES)
+    if (type != NESPAD_TYPE_SNES)
     {
         if (n & (1u << 0)) b |= B::A;
         if (n & (1u << 1)) b |= B::B;
@@ -426,6 +433,32 @@ static uint32_t readPads(uint16_t wii)
         if (n & (1u << 8)) b |= B::A;
         if (n & (1u << 9)) b |= B::X;
     }
+    return b;
+}
+
+// Merge every pad source into one. Returns pico_shared's io::GamePadState
+// button bits. wii is wiipad_read()'s mask, whose bits already carry the
+// printed labels.
+//
+// OutRun has one car, so every source drives it: both DE-9 ports are OR-ed in,
+// the way the ROM browser has always merged them, and a pad in either port
+// plays. The two ports are translated separately because they can hold
+// different pad shapes.
+static uint32_t readPads(uint16_t wii)
+{
+    typedef io::GamePadState::Button B;
+    uint32_t b = 0;
+    auto &gp = io::getCurrentGamePadState(0);
+    if (gp.connected)
+    {
+        b |= gp.buttons;
+    }
+#if NES_PIN_CLK != -1
+    b |= nespadGameBits(nespad_states_ext[0], nespad_padtype[0]);
+#endif
+#if NES_PIN_CLK_1 != -1
+    b |= nespadGameBits(nespad_states_ext[1], nespad_padtype[1]);
+#endif
     if (wii & (1u << 0)) b |= B::A;
     if (wii & (1u << 1)) b |= B::B;
     if (wii & (1u << 2)) b |= B::SELECT;
