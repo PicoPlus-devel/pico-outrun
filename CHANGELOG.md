@@ -5,6 +5,13 @@ Cannonball engine
 
 # Changelog
 
+## v0.3
+
+- **Overscan fix in menu.** A new setting for TVs that cut off the edges of the screen. It leaves the top and bottom rows of the settings menu blank, and optionally the first and last columns as well. The change is shown right away.
+- **More options on one page in the settings menu.** The settings menu now shows more options at once, so less scrolling is needed.
+- **Quicker saving in the settings menu.** Press SELECT on any setting to jump straight to the SAVE/CANCEL/DEFAULT row.
+- **Controller test screen** shows the controller outline and the list of controllers correctly again.
+
 ## v0.2
 
 Two fixes for controllers on the GPIO ports.

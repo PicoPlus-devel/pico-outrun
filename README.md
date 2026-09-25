@@ -231,7 +231,9 @@ See the [pico-infonesPlus README](https://github.com/PicoPlus-devel/pico-infones
 
 The machine is set to free play, so Start alone begins a game; the coin button is there for completeness.
 
-**Select + Start** opens the settings menu while the game keeps its state; leaving the menu returns to where you were. From there you can reset the game or change settings: screen mode (8:7 or 1:1, with or without scanlines) and scanline type, the frame rate display, display mode (HDMI or DVI), external audio on boards with an I2S audio output, board-specific options such as the speaker volume and the NeoPixel VU meter on the Fruit Jam, the controller test screen, [USB drive mode](#usb-drive-mode), and BOOTSEL mode. Settings are remembered across restarts when an SD card is present.
+**Select + Start** opens the settings menu while the game keeps its state; leaving the menu returns to where you were. From there you can reset the game or change settings: screen mode (8:7 or 1:1, with or without scanlines) and scanline type, the frame rate display, display mode (HDMI or DVI), external audio on boards with an I2S audio output, board-specific options such as the speaker volume and the NeoPixel VU meter on the Fruit Jam, the controller test screen, [USB drive mode](#usb-drive-mode), BOOTSEL mode, and the overscan fix for the menus. Settings are remembered across restarts when an SD card is present.
+
+**Overscan fix in menu** is meant for TVs that cut off the edges of the picture: **Rows** leaves the top and bottom text rows of the settings menu blank, **Rows & columns** also leaves the first and last columns blank. The effect is shown while the setting is changed, and it applies to the settings menu only, not to the game picture. In the settings menu, press SELECT on any setting to jump straight to the SAVE/CANCEL/DEFAULT row. Changes are only applied when **SAVE** is selected.
 
 Entries that the sister projects offer are absent here because they have nothing to act on: there is no *Quit game* (there is no ROM browser to return to), no save states, no frame skip setting and no *Return to emulator selection*.
 
