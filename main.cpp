@@ -138,6 +138,8 @@ int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
     [MOPT_CASSETTE] = 0,                // TI-99/4A
     [MOPT_DISK] = 0,                    // TI-99/4A
     [MOPT_SERIAL_KEYBOARD] = 0,         // TI-99/4A
+    [MOPT_SPRITE_LIMIT] = 0,            // NES
+    [MOPT_MENU_OVERSCAN] = 0,           // shown regardless: menu.cpp lists it below the menu colors
 };
 
 const uint8_t g_available_screen_modes_outrun[] = {
