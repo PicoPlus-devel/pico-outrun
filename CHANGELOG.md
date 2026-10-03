@@ -5,6 +5,12 @@ Cannonball engine
 
 # Changelog
 
+## v0.4
+
+- **All settings return to their defaults once** after updating to this version.
+- **The Controller Test screen is now closed by holding SELECT + UP** for 2 seconds. SELECT + START conflicted with some 8BitDo wireless controllers.
+- **The B button of the AliExpress SNES USB controller works without pressing Y first.**
+
 ## v0.3
 
 - **Overscan fix in menu.** A new setting for TVs that cut off the edges of the screen. It leaves the top and bottom rows of the settings menu blank, and optionally the first and last columns as well. The change is shown right away.
