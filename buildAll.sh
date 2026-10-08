@@ -4,8 +4,8 @@
 # Builds picoOutRun for every supported hardware configuration, in Release.
 # Binaries are copied to the releases folder.
 #
-# Only the four HSTX boards with PSRAM are supported: 2, 8, 13 and 14. Every
-# config is built with -2 (RP2350 - the build refuses RP2040).
+# Only the five HSTX boards with PSRAM are supported: 2, 8, 13, 14 and 15.
+# Every config is built with -2 (RP2350 - the build refuses RP2040).
 #
 # PSRAM is mandatory: the engine's big buffers go there through Frens::f_malloc,
 # so a board without it reports "This board has no PSRAM" and stops.
@@ -25,7 +25,7 @@ then
 	echo "Please install picotool from https://github.com/raspberrypi/picotool.git"
 	exit 1
 fi
-HWCONFIGS="2 8 13 14"
+HWCONFIGS="2 8 13 14 15"
 for HWCONFIG in $HWCONFIGS
 do
 	./bld.sh -c $HWCONFIG -2 || exit 1

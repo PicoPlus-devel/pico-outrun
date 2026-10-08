@@ -5,6 +5,13 @@ Cannonball engine
 
 # Changelog
 
+## v0.4
+
+- **All settings return to their defaults once** after updating to this version.
+- **Olimex RP2040-PICO-PC.** The game now runs on the [Olimex RP2040-PICO-PC](https://www.olimex.com/Products/MicroPython/PICO/RP2040-PICO-PC/) with a Raspberry Pi Pico 2 compatible board that has 8 MB of PSRAM: HDMI, sound through HDMI and the audio jack, a USB controller on the USB-A port and a NES or SNES controller on the UEXT connector. A standard Raspberry Pi Pico 2 has no PSRAM and does not work. See [Supported hardware](https://github.com/PicoPlus-devel/pico-outrun#supported-hardware). Contributed by [DnCraptor](https://github.com/DnCraptor).
+- **The Controller Test screen is now closed by holding SELECT + UP** for 2 seconds. SELECT + START conflicted with some 8BitDo wireless controllers.
+- **The B button of the AliExpress SNES USB controller works without pressing Y first.**
+
 ## v0.3
 
 - **Overscan fix in menu.** A new setting for TVs that cut off the edges of the screen. It leaves the top and bottom rows of the settings menu blank, and optionally the first and last columns as well. The change is shown right away.
@@ -41,6 +48,7 @@ is on screen.
 | Pimoroni Pico Plus 2 with Adafruit DVI and microSD breakouts, or on the PicoNES PCB (v2.6 or later) | `picoOutRun_AdafruitDVISD_pico2_arm.uf2` |
 | Murmulator M2 | `picoOutRun_MurmulatorM2_arm.uf2` |
 | Adafruit Feather RP2350 with HSTX port and TLV320DAC3100 | `picoOutRun_AdafruitFeatherRP2350_TLV320DAC3100_arm_piousb.uf2` |
+| Olimex RP2040-PICO-PC with a Pico 2 compatible board that has 8 MB of PSRAM | `picoOutRun_OlimexPicoPC_arm.uf2` |
 
 A board with 8 MB of PSRAM is required. A plain Raspberry Pi Pico 2 does not work.
 
