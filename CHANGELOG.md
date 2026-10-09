@@ -5,6 +5,10 @@ Cannonball engine
 
 # Changelog
 
+## v0.5
+
+- **Settings are shared with the other arcade games** of this family and stored in `/settings_ARC.dat`. Settings saved by an earlier version are not carried over, so they return to their defaults once.
+
 ## v0.4
 
 - **All settings return to their defaults once** after updating to this version.

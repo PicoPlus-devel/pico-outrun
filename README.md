@@ -178,7 +178,7 @@ An SD card is optional. With the game data flashed, the game runs without one, a
 A card is used for two things:
 
 1. **The ROM set**, if you would rather not build the data image on a PC. Format the card as FAT32 (recommended) or exFAT and copy the extracted OutRun ROM files into `/roms/ORUN`. The folder is created automatically on first boot. See [Game data](#game-data).
-2. **Settings.** Screen mode, audio output and the other options from the settings menu are stored in `/settings_ORUN.dat` in the root of the card and are remembered across restarts. Without a card the settings revert to their defaults on every boot.
+2. **Settings.** Screen mode, audio output and the other options from the settings menu are stored in `/settings_ARC.dat` in the root of the card and are remembered across restarts. The file is shared by all arcade games of this family. Without a card the settings revert to their defaults on every boot.
 
 There are no save files: the game has no save states, and high scores are not written to the card.
 

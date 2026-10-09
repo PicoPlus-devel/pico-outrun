@@ -95,9 +95,9 @@ typedef void (*outrun_data_progress_fn)(int step, int steps, const char *what);
 /*
  * Locate the game data: the flash image first, then the romset on the SD card.
  * Call ONCE, from main(), after Frens::initAll() (both PSRAM and the SD card
- * have to be up) and after the settings have been loaded (so `romdir` is final).
+ * have to be up) and after the settings have been loaded (so the screen mode is final).
  *
- * `romdir` is normally settings.currentDir, i.e. /roms/ORUN; `<romdir>/outrun`
+ * `romdir` is ROMDIR in main.cpp, i.e. /roms/ORUN; `<romdir>/outrun`
  * is also tried, since that is where extracting a MAME set commonly puts them.
  *
  * Returns true when a usable image is in place. On false, outrun_data_error()
