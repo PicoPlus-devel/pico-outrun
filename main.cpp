@@ -92,6 +92,9 @@ static uint32_t CPUFreqKHz = OUTRUN_CLOCKFREQ_KHZ;
 #define MARGINTOP 0
 #define MARGINBOTTOM 0
 
+// The raw romset failsafe on the SD card (see outrun_data_init()).
+#define ROMDIR "/roms/ORUN"
+
 // Must be a power of two - util::RingBuffer::setBuffer asserts it. 1024 is the
 // framebuffer-path convention; 256 has caused intermittent startup deadlocks.
 #define AUDIOBUFFERSIZE 1024
@@ -653,7 +656,7 @@ int main()
     printf("\npicoOutRun %s (%s %s)\n", SWVERSION, __DATE__, __TIME__);
     printf("HW_CONFIG=%d  HSTX=%d  clk_sys=%lu kHz\n", HW_CONFIG, HSTX, CPUFreqKHz);
 
-    FrensSettings::initSettings(FrensSettings::OUTRUN);
+    FrensSettings::initSettings(FrensSettings::ARCADE);
 
     // No ROM is ever selected: the game data comes from outrun_data_init()
     // below. initAll() only looks at this buffer on the ROM browser's
@@ -678,23 +681,26 @@ int main()
         /* loadsettings() inside initAll validates settings.currentDir and
          * resets EVERY setting if that directory is missing:
          *
-         *     Read 280 bytes from /settings_ORUN.dat
-         *     Directory /roms/ORUN does not exist
+         *     Read 280 bytes from /settings_ARC.dat
+         *     Directory /roms/arcade does not exist
          *     Resetting settings
          *
          * currentDir is a ROM-browser concept, and this port has no ROM
-         * browser, so nothing ever creates /roms/ORUN and saved settings were
-         * discarded on every boot. Create it and load again - the second pass
-         * passes the check and applies what was saved.
+         * browser, so nothing would ever create it and saved settings would
+         * be discarded on every boot. Create it and load again - the second
+         * pass passes the check and applies what was saved.
          *
          * Done here rather than in pico_shared because the directory check is
          * correct for the emulators; it is this port that is unusual. */
         f_mkdir("/roms");
-        f_mkdir("/roms/ORUN"); // FR_EXIST on later boots, which is fine
+        f_mkdir("/roms/arcade"); // FR_EXIST on later boots, which is fine
+        f_mkdir(ROMDIR);         // made too, so the user sees where the romset goes
         FrensSettings::loadsettings();
     }
-    // No filebrowser in this port; force the currentDir to the expected ROM path.
-    strcpy(settings.currentDir, "/roms/ORUN");
+    /* No filebrowser in this port. All arcade games share /settings_ARC.dat
+     * and with it currentDir; keep it at /roms/arcade, which every arcade game
+     * creates. The romset folder is passed to outrun_data_init() directly. */
+    strcpy(settings.currentDir, "/roms/arcade");
     g_settings_visibility = g_settings_visibility_outrun;
     g_available_screen_modes = g_available_screen_modes_outrun;
     scaleMode8_7_ = Frens::applyScreenMode(settings.screenMode);
@@ -704,9 +710,9 @@ int main()
 
     /* Flash first, then the romset on the SD card. This is the right point in
      * the sequence: initAll has brought up PSRAM, the SD card and the display,
-     * settings.currentDir is final, and the screen mode has been applied - so
-     * the progress and error screens can both be drawn from here on. */
-    haveData = outrun_data_init(settings.currentDir, sdOk, loading_progress);
+     * and the screen mode has been applied - so the progress and error screens
+     * can both be drawn from here on. */
+    haveData = outrun_data_init(ROMDIR, sdOk, loading_progress);
     if (haveData)
     {
         printf("Game data OK at %p (%s) - starting the engine.\n",
