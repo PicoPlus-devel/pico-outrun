@@ -1,7 +1,7 @@
 # pico-outrun
 
 > [!NOTE]
-> Version 0.2 is the current release. Binaries for the five supported configurations are available on the [Releases](https://github.com/PicoPlus-devel/pico-outrun/releases) page.
+> Version 0.5 is the current release. Binaries for the five supported configurations are available on the [Releases](https://github.com/PicoPlus-devel/pico-outrun/releases) page.
 
 **pico-outrun** is a port of the arcade game **OutRun** to RP2350-based microcontroller boards with PSRAM, with video and audio over HDMI. The game engine is [Cannonball](https://github.com/djyt/cannonball) by Chris White, in which the original 68000 and Z80 assembler has been rewritten in C++. This is therefore a native port rather than an arcade emulator: the code runs directly on the RP2350 and only the artwork, sound samples and level data come from the original ROMs.
 
@@ -88,7 +88,7 @@ The tile, sprite and road ROMs are stored in a packed arcade-specific layout and
 tools/mkoutrundata.sh ~/roms/outrun    # writes outrun-data.uf2
 ```
 
-The first command only configures the build, to establish the flash address the data image is written to; it needs the Pico SDK, see [Building from source](#building-from-source). The address is the same for all four supported configurations, so one data image works with every released binary.
+The first command only configures the build, to establish the flash address the data image is written to; it needs the Pico SDK, see [Building from source](#building-from-source). The address is the same for all five supported configurations, so one data image works with every released binary.
 
 Flash `outrun-data.uf2` the same way as the application, over BOOTSEL or with `picotool`. It only has to be flashed again when it changes, so reflashing the application later leaves the game data in place.
 
