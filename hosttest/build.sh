@@ -6,6 +6,8 @@
 #   ./hosttest/build.sh lutgen       regenerate port/ym2151_luts.h
 #   ./hosttest/build.sh check        build, then run the full check against
 #                                    $OUTRUN_ROMS (default ~/roms/outrun)
+#   ./hosttest/build.sh host         build only outrun_host, which runs the
+#                                    engine and dumps frames (see its header)
 #
 # verify_decode links Cannonball's REAL hwtiles/hwsprites/hwroad and compares
 # their output against what tools/mkoutrundata bakes into flash. It builds the
@@ -50,7 +52,37 @@ build_verify() {
         -o "$OUT/verify_decode"
 }
 
+build_host() {
+    echo "== building hosttest/outrun_host"
+    # The whole engine and video.cpp, as the firmware builds them. Only
+    # port/glue.cpp, render.cpp and alloc.cpp are replaced, by outrun_host.cpp.
+    # outrun_data.c needs a flash address to compile; the harness never probes
+    # it, and adopts the image through outrun_data_adopt_psram() instead.
+    gcc -O1 -g -std=c11 -fsanitize=address -fno-omit-frame-pointer \
+        -DOUTRUN_DATA_ADDR=0 -DOUTRUN_DATA_MAX_SIZE=0 -Iport \
+        -c port/outrun_data.c -o "$OUT/outrun_data.o"
+    g++ -O1 -g -std=c++17 -fsanitize=address -fno-omit-frame-pointer \
+        -Wno-unused-but-set-variable -Wno-sign-compare \
+        -DOUTRUN_GFX_IN_FLASH=1 \
+        -Iport -Icannonball/src/main \
+        hosttest/outrun_host.cpp \
+        port/config.cpp port/romloader.cpp port/input.cpp \
+        cannonball/src/main/engine/*.cpp \
+        cannonball/src/main/engine/audio/*.cpp \
+        cannonball/src/main/hwvideo/*.cpp \
+        cannonball/src/main/hwaudio/*.cpp \
+        cannonball/src/main/video.cpp \
+        cannonball/src/main/roms.cpp \
+        cannonball/src/main/trackloader.cpp \
+        cannonball/src/main/utils.cpp \
+        "$OUT/outrun_data.o" \
+        -o "$OUT/outrun_host" -lm
+}
+
 case "${1:-all}" in
+host)
+    build_host
+    ;;
 packer)
     build_packer
     ;;
@@ -83,7 +115,7 @@ all)
     echo "ok: tools/mkoutrundata, $OUT/verify_decode, $OUT/lutgen_ym2151"
     ;;
 *)
-    echo "usage: $0 [all|packer|verify|lutgen|check]" >&2
+    echo "usage: $0 [all|packer|verify|lutgen|check|host]" >&2
     exit 2
     ;;
 esac

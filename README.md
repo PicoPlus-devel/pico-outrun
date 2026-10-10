@@ -27,6 +27,39 @@ All five are RP2350 boards with 8 MB of PSRAM, which this port requires: a plain
 
 ***
 
+## Screenshots
+
+The game as the port draws it, at twice the original 320x224 resolution. On the board the picture is centred in the 320x240 display, with eight blank lines above and below it. The pictures were captured with the [host-side test harness](#host-side-test-harness), which runs the same engine and game data as the firmware.
+
+<table>
+  <tr>
+    <td><img width="320" alt="The OutRun logo, with the Ferrari on a wave, above the road in attract mode" src="docs/screenshots/title.png" /></td>
+    <td><img width="320" alt="Music selection: the car radio, with Passing Breeze selected" src="docs/screenshots/music.png" /></td>
+  </tr>
+  <tr>
+    <td align="center">Title screen</td>
+    <td align="center">Selecting the music on the car radio</td>
+  </tr>
+  <tr>
+    <td><img width="320" alt="The Ferrari at the start line of Coconut Beach, with the crowd and the flagman" src="docs/screenshots/start.png" /></td>
+    <td><img width="320" alt="Driving along Coconut Beach at 131 km/h, with traffic ahead" src="docs/screenshots/coconut-beach.png" /></td>
+  </tr>
+  <tr>
+    <td align="center">The start line</td>
+    <td align="center">Coconut Beach, the first stage</td>
+  </tr>
+  <tr>
+    <td><img width="320" alt="Driving through a row of stone arches on the second stage, with two cars ahead" src="docs/screenshots/arches.png" /></td>
+    <td><img width="320" alt="The Best OutRunners high score table over the road in attract mode" src="docs/screenshots/best-outrunners.png" /></td>
+  </tr>
+  <tr>
+    <td align="center">The stone arches of the second stage, in attract mode</td>
+    <td align="center">Best OutRunners</td>
+  </tr>
+</table>
+
+***
+
 ## Status and limitations
 
 > [!NOTE]
@@ -281,6 +314,17 @@ The packer is built automatically on first use. It compiles [`port/outrun_pack.c
 ### Host-side test harness
 
 [`hosttest/build.sh`](hosttest/build.sh) builds the ROM tooling natively on Linux, without the Pico SDK: `packer` builds the data packer, `verify` links Cannonball's own unmodified decoders and byte-compares their output against the packed image, `lutgen` regenerates the YM2151 tables, and `check` runs all of it against a ROM set. Decoder and data-format changes can be verified on a desktop machine without flashing a board.
+
+`host` builds `hosttest/out/outrun_host`, which runs the engine on the desktop against a packed data image and saves frames as PPM files:
+
+```sh
+hosttest/build.sh host
+./hosttest/out/outrun_host outrun-data.bin 7200 60 hosttest/out/attract --scale 2
+./hosttest/out/outrun_host outrun-data.bin 3000 600 hosttest/out/game --start 300 --accel 1500 --scale 2
+python3 hosttest/ppm2png.py 'hosttest/out/game/*.ppm'
+```
+
+The arguments are the data image, the number of frames to run (60 per second), how often to save one, and the output directory. `--start F` presses Start at frame F and `--accel F` holds the accelerator from frame F on. Without them the game stays in attract mode. These two runs produced the [screenshots](#screenshots).
 
 ## Acknowledgements
 
