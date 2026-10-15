@@ -98,6 +98,17 @@ Each file is checked against its expected CRC on both routes, so an incomplete s
 
 If neither route has been taken, the application displays a screen describing what is missing and what to do about it — no PSRAM, no SD card, no ROMs in the directory it looked in, files missing from the set, or a CRC mismatch. The settings menu remains reachable with **Select + Start** from that screen, so [USB drive mode](#usb-drive-mode) can be used to put the ROM set on the card, and BOOTSEL mode can be entered without unplugging the board.
 
+**updateAll installs the set on the SD card.** `updateAll.exe`, a program for Windows 10 and 11, is included in every release of pico-outrun from v0.5.1 on, among the files at the end of the release page. It runs on a computer with the SD card inserted: it takes `outrun.zip` from a folder of your choice, or downloads it when it is not there, and writes the set, unzipped and under the file names the application expects, into `/roms/ORUN`. This prepares the card for the second route above; the data image of the first route is still made with `tools/mkoutrundata.sh`. It is a single file and needs no installation. The program is not signed, so Windows may show "Windows protected your PC" the first time it is started; select **More info**, then **Run anyway**.
+
+1. Start `updateAll.exe`. It selects a removable drive by itself; under **SD card**, check that it is the card, or choose another.
+2. Under **Zip folder**, choose the folder with the MAME zips you already have, if any.
+3. Untick the sets that are not wanted. updateAll also installs the sets of other applications of this family, such as pico-galagino and pico-phoenix; pico-outrun needs only the set **OutRun**. The **Status** column shows which sets are already complete on the card.
+4. Select **Install**.
+
+By default, zips that are not in the zip folder are downloaded from [ArcadeROMsDB_MiSTer](https://github.com/zakk4223/ArcadeROMsDB_MiSTer), a third-party database that is not part of this project. The user is responsible for holding the rights to the ROM sets, whether they are supplied as zips or downloaded. To use only your own zips, untick **Download missing zips**.
+
+updateAll is maintained in [pico-bootLoader](https://github.com/PicoPlus-devel/pico-bootLoader), whose SD-card archive carries it as well. The same installer is also available there as a Python script, `updateAll.py`, for Linux and macOS, and as a PowerShell script, `updateAll.ps1`. The [updateAll README](https://github.com/PicoPlus-devel/pico-bootLoader/blob/main/updateAll/README.md) describes all three and their options.
+
 ***
 
 ## Supported hardware
@@ -210,7 +221,7 @@ An SD card is optional. With the game data flashed, the game runs without one, a
 
 A card is used for two things:
 
-1. **The ROM set**, if you would rather not build the data image on a PC. Format the card as FAT32 (recommended) or exFAT and copy the extracted OutRun ROM files into `/roms/ORUN`. The folder is created automatically on first boot. See [Game data](#game-data).
+1. **The ROM set**, if you would rather not build the data image on a PC. Format the card as FAT32 (recommended) or exFAT and copy the extracted OutRun ROM files into `/roms/ORUN`, or have `updateAll.exe` write them there from a Windows computer. The folder is created automatically on first boot. See [Game data](#game-data).
 2. **Settings.** Screen mode, audio output and the other options from the settings menu are stored in `/settings_ARC.dat` in the root of the card and are remembered across restarts. The file is shared by all arcade games of this family. Without a card the settings revert to their defaults on every boot.
 
 There are no save files: the game has no save states, and high scores are not written to the card.
@@ -334,6 +345,7 @@ The arguments are the data image, the number of frames to run (60 per second), h
 - (S)NES and Wii controller support: [@PaintYourDragon](https://github.com/PaintYourDragon) and [Adafruit](https://www.adafruit.com).
 - Olimex RP2040-PICO-PC support, including sound through its audio jack: [DnCraptor](https://github.com/DnCraptor).
 - The [PicoNES PCB](#picones-pcb) was designed by **John Edgar Park** ([@johnedgarpark](https://twitter.com/johnedgarpark)); the 3D-printed case for it by [DynaMight1124](https://github.com/DynaMight1124).
+- updateAll, the ROM set installer included in the releases as `updateAll.exe`: [pico-bootLoader](https://github.com/PicoPlus-devel/pico-bootLoader/tree/main/updateAll), under the GNU General Public License v3.0, built with miniz and cJSON (MIT licence). Its source is in that repository.
 
 ## Use of AI
 

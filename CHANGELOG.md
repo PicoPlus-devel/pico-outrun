@@ -5,6 +5,10 @@ Cannonball engine
 
 # Changelog
 
+## v0.5.1
+
+- The release now includes updateAll.exe, which installs the ROM set on the SD card from a Windows computer. The readme explains how to use it.
+
 ## v0.5
 
 - **Settings are shared with the other arcade games** of this family and stored in `/settings_ARC.dat`. Settings saved by an earlier version are not carried over, so they return to their defaults once.
