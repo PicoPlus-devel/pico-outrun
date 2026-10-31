@@ -58,19 +58,21 @@
 #define OUTRUN_VOLTAGE VREG_VOLTAGE_1_30
 #define OUTRUN_MAX_VOLTAGE VREG_VOLTAGE_1_30
 #else
-/* 378 MHz / 1.50 V on every HSTX board. The limits allow 504 MHz / 1.70 V, as in
- * pico_snesPlus, but that opt-in is not offered here. This port only has the
- * in-game menu, and pico_shared shows Overclock there only when its visibility
- * is 2 (menu.cpp skips MOPT_OVERCLOCK when calledFromGame and the visibility is
- * below 2). MOPT_OVERCLOCK is 0 below, so the entry stays hidden.
+/* 384 MHz / 1.50 V on every HSTX board: 8 x 48 MHz, so USB runs from PLL_SYS and
+ * PLL_USB is the 126 MHz HSTX clock (pico_shared setClocksAndStartStdio). The
+ * limits allow 504 MHz / 1.70 V, as in pico_snesPlus, but that opt-in is not
+ * offered here. This port only has the in-game menu, and pico_shared shows
+ * Overclock there only when its visibility is 2 (menu.cpp skips MOPT_OVERCLOCK
+ * when calledFromGame and the visibility is below 2). MOPT_OVERCLOCK is 0 below,
+ * so the entry stays hidden.
  *
  * Should it ever be exposed: 504 MHz needs 1.70 V - snesPlus records that
  * 1.60-1.65 V hardfaults in heavy scenes - and its comment warns that 1.7 V
  * "CAN CAUSE DAMAGE", being above the RP2350's nominal core voltage. So it has
  * to stay a deliberate choice rather than the value everyone gets. */
-#define OUTRUN_CLOCKFREQ_KHZ 378000
+#define OUTRUN_CLOCKFREQ_KHZ 384000
 #define OUTRUN_VOLTAGE VREG_VOLTAGE_1_50
-#define OUTRUN_MIN_CLOCKFREQ_KHZ 378000
+#define OUTRUN_MIN_CLOCKFREQ_KHZ 384000
 #define OUTRUN_MIN_VOLTAGE VREG_VOLTAGE_1_50
 #define OUTRUN_MAX_CLOCKFREQ_KHZ 504000
 #define OUTRUN_MAX_VOLTAGE VREG_VOLTAGE_1_70
@@ -145,7 +147,6 @@ int8_t g_settings_visibility_outrun[MOPT_COUNT] = {
     [MOPT_MENU_OVERSCAN] = 0,           // shown regardless: menu.cpp lists it below the menu colors
     [MOPT_GENESIS_PAD] = 0,             // Genesis
     [MOPT_NES_PALETTE] = 0,             // NES
-    [MOPT_HSTX_CLOCK_FIX] = (HSTX && !CFG_TUH_RPI_PIO_USB) ? 2 : 0, // 2: in-game; PIO-USB builds always have it (NES_OVERCLOCK_FIX)
 };
 
 const uint8_t g_available_screen_modes_outrun[] = {

@@ -270,7 +270,6 @@ target_compile_definitions(${projectname} PUBLIC
     ENABLE_VU_METER=${ENABLE_VU_METER}
     WIIPAD_DELAYED_START=${WIIPAD_DELAYED_START}
     ENABLEDVI=1
-    NES_OVERCLOCK_FIX=1  # avoid artifacts due to usb jitter
     FRENS_FORCE_USB_MSC_IN_SETTINGS=1   # Always show USB drive mode in settings
 )
 # ---------------------------------------------------------------------------

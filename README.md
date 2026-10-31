@@ -159,7 +159,7 @@ For wiring and assembly instructions, see the setup sections of the [pico-infone
 
 ## Overclocking
 
-All five supported configurations run at **378 MHz at 1.50 V**. Cannonball runs single-core: core1 is owned by the display driver and the sound chain, so all of the engine and rendering headroom has to come out of the core clock. 378 MHz is what makes the port viable at all, and there is no user-selectable overclock. The sister projects offer it in the settings menu of their ROM browser; this port has no ROM browser, and the entry is not enabled in its in-game menu.
+All five supported configurations run at **384 MHz at 1.50 V**. Cannonball runs single-core: core1 is owned by the display driver and the sound chain, so all of the engine and rendering headroom has to come out of the core clock. That clock is what makes the port viable at all, and there is no user-selectable overclock. The sister projects offer it in the settings menu of their ROM browser; this port has no ROM browser, and the entry is not enabled in its in-game menu.
 
 That clock is also why the board configurations driven by the bit-banged PicoDVI driver are not supported. There the system clock is tied to the pixel clock and cannot exceed 324 MHz, and without the HSTX driver's background task the sound chain moves back onto core0, so audio quality follows the frame rate. `./bld.sh -D` still forces that path on an HSTX-capable board, and the remaining board configurations in `pico_shared` still build, but neither is a supported way to run this port. Most of those boards have no PSRAM either.
 

@@ -5,15 +5,18 @@ Cannonball engine
 
 # Changelog
 
-## v0.5.3
+## v0.6
 
+- **No more dots or lines in the picture.** On boards with HSTX video, some TVs and monitors showed small dots or short dotted lines. The picture is now clean, and the built-in USB port can still be used for controllers and USB drive mode. Thanks to @szuping for the hint that led to this fix.
+- **The Video Clock Fix setting has been removed.** It is no longer needed. On a board where it was turned on, a USB controller on the built-in USB port works again.
+- **The board now runs at 384 MHz instead of 378 MHz.** See [Overclocking](https://github.com/PicoPlus-devel/pico-outrun#overclocking) in the readme.
 - **The settings menu no longer opens by itself with a controller on the Wii port.** With a NES or SNES Classic Mini controller or a Wii Classic controller, the settings menu opened a few moments after pressing START, and again every time it was closed. USB controllers and controllers on the NES/SNES ports were not affected.
 - **USB controllers on the Adafruit Fruit Jam and Feather RP2350 are now found at every start.** On boards with an older RP2350 chip they were often not detected.
 - **USB controllers connected through a USB hub are detected reliably** on the Pimoroni Pico Plus 2, Murmulator M2 and Olimex RP2040-PICO-PC. They were often not found, and the game could stop.
 
 ## v0.5.2
 
-- **New setting: Video Clock Fix** (Pimoroni Pico Plus 2 or PicoNES PCB, Murmulator M2 and Olimex RP2040-PICO-PC). Turn it on if your TV or monitor shows small dots or lines in the picture. A USB controller can then no longer be used; use a NES, SNES or Wii controller instead. On the Adafruit Fruit Jam and Feather RP2350 it is always on.
+- ~~**New setting: Video Clock Fix** (Pimoroni Pico Plus 2 or PicoNES PCB, Murmulator M2 and Olimex RP2040-PICO-PC). Turn it on if your TV or monitor shows small dots or lines in the picture. A USB controller can then no longer be used; use a NES, SNES or Wii controller instead. On the Adafruit Fruit Jam and Feather RP2350 it is always on.~~ Removed in v0.6.
 - **PicoNES PCB Gerber files.** The release now includes the Gerber files of the PicoNES PCB: `pico_nesPCB_v2.6.zip` with NES controller ports, and the new `pico_nesPCB_v2.8_SNES_PORTS.zip` with SNES controller ports, designed by John Edgar Park ([@johnedgarpark](https://twitter.com/johnedgarpark)). Both need a Pimoroni Pico Plus 2 mounted on male headers. See [Custom PCB](https://github.com/PicoPlus-devel/pico-outrun#custom-pcb) in the readme, and the [PCB README](https://github.com/PicoPlus-devel/pico_shared/blob/main/PCB/README.md) for parts lists and build instructions.
 
 ## v0.5.1
