@@ -13,6 +13,7 @@ Cannonball engine
 - **The settings menu no longer opens by itself with a controller on the Wii port.** With a NES or SNES Classic Mini controller or a Wii Classic controller, the settings menu opened a few moments after pressing START, and again every time it was closed. USB controllers and controllers on the NES/SNES ports were not affected.
 - **USB controllers on the Adafruit Fruit Jam and Feather RP2350 are now found at every start.** On boards with an older RP2350 chip they were often not detected.
 - **USB controllers connected through a USB hub are detected reliably** on the Pimoroni Pico Plus 2, Murmulator M2 and Olimex RP2040-PICO-PC. They were often not found, and the game could stop.
+- **USB keyboard in the menus.** Enter selects and Esc goes back.
 
 ## v0.5.2
 
