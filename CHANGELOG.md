@@ -5,6 +5,12 @@ Cannonball engine
 
 # Changelog
 
+## v0.6.1
+
+- **No more picture drop-outs or flickering lines in DVI mode.** On boards with HSTX video, with *Display Mode* set to DVI, the picture could randomly drop out, and now and then a single line was shown shifted to the right for one frame.
+- **NES and SNES controllers on the controller ports are now read with the same timing as a real console**, on all boards. Thanks to @javavi.
+- Under pico-bootLoader, the settings menu entry that goes back to the bootloader is now called **Return to boot loader**.
+
 ## v0.6
 
 - **No more dots or lines in the picture.** On boards with HSTX video, some TVs and monitors showed small dots or short dotted lines. The picture is now clean, and the built-in USB port can still be used for controllers and USB drive mode. Thanks to @szuping for the hint that led to this fix.
