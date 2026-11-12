@@ -1,7 +1,7 @@
 # pico-outrun
 
 > [!NOTE]
-> Version 0.5 is the current release. Binaries for the five supported configurations are available on the [Releases](https://github.com/PicoPlus-devel/pico-outrun/releases) page.
+> Version 0.7 is the current release. Binaries for the seven supported configurations are available on the [Releases](https://github.com/PicoPlus-devel/pico-outrun/releases) page.
 
 **pico-outrun** is a port of the arcade game **OutRun** to RP2350-based microcontroller boards with PSRAM, with video and audio over HDMI. The game engine is [Cannonball](https://github.com/djyt/cannonball) by Chris White, in which the original 68000 and Z80 assembler has been rewritten in C++. This is therefore a native port rather than an arcade emulator: the code runs directly on the RP2350 and only the artwork, sound samples and level data come from the original ROMs.
 
@@ -13,15 +13,17 @@ It uses the same menu, display, audio and controller framework as this family of
 - Game Boy / Game Boy Color: [pico-peanutGB](https://github.com/PicoPlus-devel/pico-peanutGB)
 - Sega Mega Drive / Genesis: [pico-genesisPlus](https://github.com/PicoPlus-devel/pico-genesisPlus)
 
-It runs on five hardware configurations — see [Supported hardware](#supported-hardware):
+It runs on seven hardware configurations — see [Supported hardware](#supported-hardware):
 
 - [Adafruit Fruit Jam](https://www.adafruit.com/product/6200) — the primary development and test board
 - [Pimoroni Pico Plus 2](https://shop.pimoroni.com/products/pimoroni-pico-plus-2?variant=42092668289107) with an [Adafruit DVI breakout](https://www.adafruit.com/product/4984) and a microSD breakout, on a breadboard or on the [PicoNES PCB](#picones-pcb)
 - [Murmulator M2](https://murmulator.ru)
 - [Adafruit Feather RP2350 with HSTX Port](https://www.adafruit.com/product/6130) with a TLV320DAC3100 I2S DAC and a microSD breakout
 - [Olimex RP2040-PICO-PC](https://www.olimex.com/Products/MicroPython/PICO/RP2040-PICO-PC/) with a Raspberry Pi Pico 2 compatible board that has 8 MB of PSRAM
+- [Pico Computer 3](https://github.com/UKTailwind/Pico-Computer-3)
+- [PCB for the Waveshare RP2350-PiZero](https://github.com/PicoPlus-devel/pico-infonesPlus#pcb-with-waveshare-rp2350-pizero), designed by Liu Szuping, with an 8 MB PSRAM chip soldered onto the RP2350-PiZero
 
-All five are RP2350 boards with 8 MB of PSRAM, which this port requires: a plain Raspberry Pi Pico 2 has none and cannot be used.
+All seven are RP2350 boards with 8 MB of PSRAM, which this port requires: a plain Raspberry Pi Pico 2 has none and cannot be used.
 
 **The OutRun ROM set is not included and must be supplied by the user.** It is copyright SEGA and is not distributed with this project. See [Game data](#game-data).
 
@@ -132,7 +134,7 @@ If the game data is found neither in flash nor on the SD card, the application d
 
 ## Supported hardware
 
-An RP2350 board with 8 MB of PSRAM is required, and video must run over HSTX. Only the five hardware configurations below are supported.
+An RP2350 board with 8 MB of PSRAM is required, and video must run over HSTX. Only the seven hardware configurations below are supported.
 
 | HW_CONFIG | Hardware | Binary |
 | --- | --- | --- |
@@ -141,6 +143,8 @@ An RP2350 board with 8 MB of PSRAM is required, and video must run over HSTX. On
 | 13 | [Murmulator M2](https://murmulator.ru) | `picoOutRun_MurmulatorM2_arm.uf2` |
 | 14 | [Adafruit Feather RP2350 with HSTX Port](https://www.adafruit.com/product/6130) with TLV320DAC3100 I2S DAC and microSD breakout | `picoOutRun_AdafruitFeatherRP2350_TLV320DAC3100_arm_piousb.uf2` |
 | 15 | [Olimex RP2040-PICO-PC](https://www.olimex.com/Products/MicroPython/PICO/RP2040-PICO-PC/) with a Raspberry Pi Pico 2 compatible board that has 8 MB of PSRAM | `picoOutRun_OlimexPicoPC_arm.uf2` |
+| 17 | [Pico Computer 3](https://github.com/UKTailwind/Pico-Computer-3) | `picoOutRun_PicoComputer3_arm.uf2` |
+| 18 | [PCB for the Waveshare RP2350-PiZero](https://github.com/PicoPlus-devel/pico-infonesPlus#pcb-with-waveshare-rp2350-pizero) with an 8 MB PSRAM chip soldered onto the RP2350-PiZero | `picoOutRun_WaveShareRP2350PiZeroLiuPCB_arm_piousb.uf2` |
 
 Notes per configuration:
 
@@ -148,7 +152,9 @@ Notes per configuration:
 - **HW_CONFIG 8**: no additional hardware is required apart from a USB game controller. Button 2 switches the NeoPixel VU meter on and off.
 - **HW_CONFIG 14**: the Feather RP2350 is sold in two variants: [with 8 MB PSRAM onboard](https://www.adafruit.com/product/6130) and [without PSRAM](https://www.adafruit.com/product/6000). On the variant without PSRAM, a PSRAM chip must be soldered onto the board separately.
 - **HW_CONFIG 15**: a standard Raspberry Pi Pico 2 does not work — it has no PSRAM. The board fitted must have 8 MB of PSRAM with its chip select on GPIO 8. A NES or SNES controller can be connected to the UEXT connector: clock on GPIO 5, latch on GPIO 9 and data on GPIO 20. There is only one controller port and no Wii Classic controller support. There is no Pico 2 W binary. Support for this board was contributed by [DnCraptor](https://github.com/DnCraptor).
-- **Audio** is sent over HDMI by default. Configurations 8, 13 and 14 also have an I2S audio output, selected with *External Audio* in the settings menu; on the Fruit Jam, plugging in headphones selects it automatically. Configuration 2 has HDMI audio only. Configuration 15 plays sound through HDMI and the board's audio jack at the same time.
+- **HW_CONFIG 17**: the Pico Computer 3 has 8 MB of PSRAM on the board. Up to two NES or SNES controllers and a Wii Classic controller connect to its I/O header H4; the pins are listed under [Pico Computer 3](https://github.com/PicoPlus-devel/pico-infonesPlus#pico-computer-3) in the pico-infonesPlus readme. The pin assignment may still change. Support for this board was contributed by [javavi](https://github.com/javavi).
+- **HW_CONFIG 18**: a PCB for the [Waveshare RP2350-PiZero](https://www.waveshare.com/rp2350-pizero.htm), designed by Liu Szuping ([szuping](https://github.com/szuping)); the PCB design is not yet available. The RP2350-PiZero comes without PSRAM, so an 8 MB PSRAM chip must be soldered onto it. If its flash chip is not a Winbond chip, apply the [flash_config fix](https://github.com/PicoPlus-devel/pico-infonesPlus#psram-with-a-non-winbond-flash-chip) before flashing the game. Video goes through the HDMI port of the PCB, not the mini HDMI port of the RP2350-PiZero. A USB controller connects to the PIO-USB port of the RP2350-PiZero, and up to two NES or SNES controllers to the controller ports of the PCB. With an ESP32 module running [BlueRetro](https://github.com/darthcloud/blueretro) in the socket of the PCB, Bluetooth controllers are used instead of the controller ports; remove the module to use the ports. See [PCB with Waveshare RP2350-PiZero](https://github.com/PicoPlus-devel/pico-infonesPlus#pcb-with-waveshare-rp2350-pizero) in the pico-infonesPlus readme.
+- **Audio** is sent over HDMI by default. Configurations 8, 13, 14, 17 and 18 also have an I2S audio output, selected with *External Audio* in the settings menu; on the Fruit Jam, plugging in headphones selects it automatically. Configuration 2 has HDMI audio only. Configuration 15 plays sound through HDMI and the board's audio jack at the same time.
 
 > [!IMPORTANT]
 > Unlike the sister projects, the build does not refuse a configuration without PSRAM: the other board configurations known from those projects still compile and flash. They will not run. A board without PSRAM reports *"This board has no PSRAM. picoOutRun cannot run on it."* at startup, and the configurations that fall back to the bit-banged PicoDVI driver are too slow for the engine — see [Overclocking](#overclocking).
@@ -159,7 +165,7 @@ For wiring and assembly instructions, see the setup sections of the [pico-infone
 
 ## Overclocking
 
-All five supported configurations run at **384 MHz at 1.50 V**. Cannonball runs single-core: core1 is owned by the display driver and the sound chain, so all of the engine and rendering headroom has to come out of the core clock. That clock is what makes the port viable at all, and there is no user-selectable overclock. The sister projects offer it in the settings menu of their ROM browser; this port has no ROM browser, and the entry is not enabled in its in-game menu.
+All seven supported configurations run at **384 MHz at 1.50 V**. Cannonball runs single-core: core1 is owned by the display driver and the sound chain, so all of the engine and rendering headroom has to come out of the core clock. That clock is what makes the port viable at all, and there is no user-selectable overclock. The sister projects offer it in the settings menu of their ROM browser; this port has no ROM browser, and the entry is not enabled in its in-game menu.
 
 That clock is also why the board configurations driven by the bit-banged PicoDVI driver are not supported. There the system clock is tied to the pixel clock and cannot exceed 324 MHz, and without the HSTX driver's background task the sound chain moves back onto core0, so audio quality follows the frame rate. `./bld.sh -D` still forces that path on an HSTX-capable board, and the remaining board configurations in `pico_shared` still build, but neither is a supported way to run this port. Most of those boards have no PSRAM either.
 
@@ -281,7 +287,7 @@ The machine is set to free play, so Start alone begins a game; the coin button i
 
 **Overscan fix in menu** is meant for TVs that cut off the edges of the picture: **Rows** leaves the top and bottom text rows of the settings menu blank, **Rows & columns** also leaves the first and last columns blank. The effect is shown while the setting is changed, and it applies to the settings menu only, not to the game picture. In the settings menu, press SELECT on any setting to jump straight to the SAVE/CANCEL/DEFAULT row. Changes are only applied when **SAVE** is selected.
 
-Entries that the sister projects offer are absent here because they have nothing to act on: there is no *Quit game* (there is no ROM browser to return to), no save states, no frame skip setting and no *Return to emulator selection*.
+Entries that the sister projects offer are absent here because they have nothing to act on: there is no *Quit game* (there is no ROM browser to return to), no save states, no frame skip setting and no *Return to boot loader*.
 
 ***
 
@@ -305,7 +311,9 @@ git submodule update --init --recursive
 ./bld.sh -c13 -2    # HW_CONFIG 13: Murmulator M2
 ./bld.sh -c14 -2    # HW_CONFIG 14: Adafruit Feather RP2350
 ./bld.sh -c15 -2    # HW_CONFIG 15: Olimex RP2040-PICO-PC
-./buildAll.sh       # all five; what CI runs
+./bld.sh -c17 -2    # HW_CONFIG 17: Pico Computer 3
+./bld.sh -c18 -2    # HW_CONFIG 18: PCB for the Waveshare RP2350-PiZero
+./buildAll.sh       # all seven; what CI runs
 ```
 
 Every configuration must be built with `-2`: this is an RP2350 project, and the build refuses RP2040. Run `./bld.sh -h` for all options. The resulting `.uf2` file is placed in the `releases/` folder; flash it by holding BOOTSEL while connecting the board and copying the file onto the USB drive that appears.
@@ -343,6 +351,8 @@ The arguments are the data image, the number of frames to run (60 per second), h
 - HSTX video driver and I2S audio: [@fliperama86](https://github.com/fliperama86) and [@frenskefrens](https://github.com/fhoedemakers).
 - (S)NES and Wii controller support: [@PaintYourDragon](https://github.com/PaintYourDragon) and [Adafruit](https://www.adafruit.com).
 - Olimex RP2040-PICO-PC support, including sound through its audio jack: [DnCraptor](https://github.com/DnCraptor).
+- Pico Computer 3 support: [javavi](https://github.com/javavi).
+- PCB design for the Waveshare RP2350-PiZero: Liu Szuping ([szuping](https://github.com/szuping)).
 - The [PicoNES PCB](#picones-pcb) was designed by **John Edgar Park** ([@johnedgarpark](https://twitter.com/johnedgarpark)); the 3D-printed case for it by [DynaMight1124](https://github.com/DynaMight1124).
 - updateAll, the ROM set installer included in the releases as `updateAll.exe`: [pico-bootLoader](https://github.com/PicoPlus-devel/pico-bootLoader/tree/main/updateAll), under the GNU General Public License v3.0, built with miniz and cJSON (MIT licence). Its source is in that repository.
 

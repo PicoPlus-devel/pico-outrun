@@ -1,12 +1,14 @@
 # pico-outRun
 
 pico-outrun is a port of the arcade game OutRun to RP2350 boards with PSRAM, based on the
-Cannonball engine
+Cannonball engine.
 
 # Changelog
 
-## v0.6.1
+## v0.7
 
+- **Pico Computer 3.** The game now runs on the [Pico Computer 3](https://github.com/UKTailwind/Pico-Computer-3): HDMI, sound through HDMI or the audio jack, USB controllers, 8 MB of PSRAM, and NES or SNES controllers and a Wii Classic controller on the I/O header. The pin assignment may still change. See [Supported hardware](https://github.com/PicoPlus-devel/pico-outrun#supported-hardware). Thanks to @javavi.
+- **PCB for the Waveshare RP2350-PiZero.** The game now runs on a PCB for the Waveshare RP2350-PiZero, designed by @szuping: HDMI, sound through HDMI or the audio jack, a USB controller on the PIO-USB port, NES and SNES controller ports, and a socket for an ESP32 module that connects Bluetooth controllers through [BlueRetro](https://github.com/darthcloud/blueretro). An 8 MB PSRAM chip must be soldered onto the RP2350-PiZero. The PCB design is not yet available. See [PCB with Waveshare RP2350-PiZero](https://github.com/PicoPlus-devel/pico-infonesPlus#pcb-with-waveshare-rp2350-pizero) in the pico-infonesPlus readme.
 - **No more picture drop-outs or flickering lines in DVI mode.** On boards with HSTX video, with *Display Mode* set to DVI, the picture could randomly drop out, and now and then a single line was shown shifted to the right for one frame.
 - **NES and SNES controllers on the controller ports are now read with the same timing as a real console**, on all boards. Thanks to @javavi.
 - Under pico-bootLoader, the settings menu entry that goes back to the bootloader is now called **Return to boot loader**.
@@ -78,6 +80,8 @@ is on screen.
 | Murmulator M2 | `picoOutRun_MurmulatorM2_arm.uf2` |
 | Adafruit Feather RP2350 with HSTX port and TLV320DAC3100 | `picoOutRun_AdafruitFeatherRP2350_TLV320DAC3100_arm_piousb.uf2` |
 | Olimex RP2040-PICO-PC with a Pico 2 compatible board that has 8 MB of PSRAM | `picoOutRun_OlimexPicoPC_arm.uf2` |
+| Pico Computer 3 | `picoOutRun_PicoComputer3_arm.uf2` |
+| PCB for the Waveshare RP2350-PiZero, with an 8 MB PSRAM chip soldered onto the RP2350-PiZero | `picoOutRun_WaveShareRP2350PiZeroLiuPCB_arm_piousb.uf2` |
 
 A board with 8 MB of PSRAM is required. A plain Raspberry Pi Pico 2 does not work.
 
