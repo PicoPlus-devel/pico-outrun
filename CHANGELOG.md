@@ -12,6 +12,7 @@ Cannonball engine.
 - **No more picture drop-outs or flickering lines in DVI mode.** On boards with HSTX video, with *Display Mode* set to DVI, the picture could randomly drop out, and now and then a single line was shown shifted to the right for one frame.
 - **NES and SNES controllers on the controller ports are now read with the same timing as a real console**, on all boards. Thanks to @javavi.
 - Under pico-bootLoader, the settings menu entry that goes back to the bootloader is now called **Return to boot loader**.
+- **Pico Computer 3** (updated 15 November 2026): the NES and SNES controllers on the I/O header moved to other pins. See [Pico Computer 3](https://github.com/PicoPlus-devel/pico-infonesPlus#pico-computer-3) in the pico-infonesPlus readme for the new pins, and download `picoOutRun_PicoComputer3_arm.uf2` again.
 
 ## v0.6
 
