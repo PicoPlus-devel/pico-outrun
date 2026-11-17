@@ -5,6 +5,10 @@ Cannonball engine.
 
 # Changelog
 
+## Next release
+
+- Built with Pico SDK 2.3.1.
+
 ## v0.7
 
 - **Pico Computer 3.** The game now runs on the [Pico Computer 3](https://github.com/UKTailwind/Pico-Computer-3): HDMI, sound through HDMI or the audio jack, USB controllers, 8 MB of PSRAM, and NES or SNES controllers and a Wii Classic controller on the I/O header. The pin assignment may still change. See [Supported hardware](https://github.com/PicoPlus-devel/pico-outrun#supported-hardware). Thanks to @javavi.
