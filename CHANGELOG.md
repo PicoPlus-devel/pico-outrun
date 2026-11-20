@@ -5,7 +5,9 @@ Cannonball engine.
 
 # Changelog
 
-## Next release
+## v0.7_bl
+
+This version is built for [pico-bootLoader](https://github.com/PicoPlus-devel/pico-bootLoader) only, and is included in its SD-card archive. It has no release of its own: without pico-bootLoader, keep using v0.7.
 
 - **Attract mode.** pico-bootLoader's new attract mode can now start the game when its ROMs are on the card; it then plays its own demo. Press any button to play yourself.
 - Built with Pico SDK 2.3.1.
