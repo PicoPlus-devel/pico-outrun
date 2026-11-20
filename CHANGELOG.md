@@ -7,6 +7,7 @@ Cannonball engine.
 
 ## Next release
 
+- **Attract mode.** pico-bootLoader's new attract mode can now start the game when its ROMs are on the card; it then plays its own demo. Press any button to play yourself.
 - Built with Pico SDK 2.3.1.
 
 ## v0.7
